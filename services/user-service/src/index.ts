@@ -4,10 +4,12 @@ import { config } from "./config/env";
 import { connectDatabase } from "./config/database";
 import { errorHandler } from "./middleware/errorHandler";
 import { sendSuccess } from "./utils/response";
+import authRouter from "./routes/auth.routes";
 
 const app = express();
 
 app.use(express.json());
+app.use('/api/v1/auth', authRouter)
 
 // Health check route
 app.get("/health", (req, res) => {

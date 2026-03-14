@@ -1,5 +1,7 @@
+import { ZodError } from "zod";
+
 import { Request, Response, NextFunction } from "express";
-import { AppError, InternalError } from "../errors/AppError";
+import { AppError, InternalError, ValidationError } from "../errors/AppError";
 import { sendError } from "../utils/response";
 
 export const errorHandler = (
@@ -8,7 +10,10 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
-  if (err instanceof AppError) {
+  if (err instanceof ZodError) {
+    const zodError = err as ZodError;
+    sendError(res, new ValidationError(zodError.issues[0].message));
+  } else if (err instanceof AppError) {
     sendError(res, err);
   } else {
     console.error("Unexpected error:", err);
