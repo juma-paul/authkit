@@ -1,7 +1,9 @@
+import express from "express";
+
 import { config } from "./config/env";
 import { connectDatabase } from "./config/database";
-
-import express from "express";
+import { errorHandler } from "./middleware/errorHandler";
+import { sendSuccess } from "./utils/response";
 
 const app = express();
 
@@ -9,11 +11,15 @@ app.use(express.json());
 
 // Health check route
 app.get("/health", (req, res) => {
-  res.json({
+  sendSuccess(res, {
     status: "healthy",
     service: "user-service",
+    environment: config.nodeEnv,
   });
 });
+
+// Error handler
+app.use(errorHandler);
 
 // Start server
 const start = async () => {
@@ -22,7 +28,6 @@ const start = async () => {
     console.log(`🚀 User service running on port ${config.port}`);
     console.log(`📖 Health check: http://localhost:${config.port}/health`);
     console.log(`🌍 Environment: ${config.nodeEnv}`);
-
   });
 };
 
