@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { Request, Response, NextFunction } from "express";
 import { AppError, InternalError, ValidationError } from "../errors/AppError";
 import { sendError } from "../utils/response";
+import { config } from "../config/env";
 
 export const errorHandler = (
   err: Error,
@@ -16,7 +17,9 @@ export const errorHandler = (
   } else if (err instanceof AppError) {
     sendError(res, err);
   } else {
-    console.error("Unexpected error:", err);
+    if (config.nodeEnv !== "test") {
+      console.error("Unexpected error:", err);
+    }
     sendError(res, new InternalError());
   }
 };

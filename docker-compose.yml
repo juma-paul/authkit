@@ -30,6 +30,9 @@ services:
     ports:
       - "5433:5432"
 
+    volumes:
+    - ./infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d budget_app_test"]
       interval: 10s
