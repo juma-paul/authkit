@@ -1,12 +1,11 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { Response, Request, NextFunction } from "express";
 
-import { config } from "../config/env";
+import { Response, Request, NextFunction } from "express";
 import { pool } from "../config/database";
 import { ConflictError } from "../errors/AppError";
 import { registerSchema } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
+import { generateTokens } from "../utils/tokens";
 
 export const register = async (
   req: Request,
@@ -41,14 +40,16 @@ export const register = async (
     const user = result.rows[0];
 
     // Generate JWT
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      config.jwtSecret,
-      { expiresIn: config.jwtExpiresIn },
-    );
+    const { accessToken, refreshToken } = generateTokens(user.id, user.email);
 
+    // Save refresh token to database
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+      [user.id, refreshToken],
+    );
     // Return response
-    sendSuccess(res, { user, token }, 201);
+    sendSuccess(res, { user, accessToken, refreshToken }, 201);
   } catch (error) {
     next(error);
   }

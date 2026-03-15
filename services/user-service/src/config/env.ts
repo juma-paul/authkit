@@ -6,7 +6,13 @@ dotenv.config({
   quiet: true
 });
 
-const required = ["DATABASE_URL", "JWT_SECRET", "JWT_EXPIRES_IN"];
+const required = [
+  "DATABASE_URL",
+  "JWT_SECRET",
+  "JWT_EXPIRES_IN",
+  "JWT_REFRESH_SECRET",
+  "JWT_REFRESH_EXPIRES_IN",
+];
 
 required.forEach((key) => {
   if (!process.env[key]) {
@@ -20,4 +26,6 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL!,
   jwtSecret: process.env.JWT_SECRET!,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN! as jwt.SignOptions["expiresIn"],
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET!,
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"],
 };
