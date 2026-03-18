@@ -2,11 +2,11 @@ import request from "supertest";
 import app from "../../app";
 import { pool } from "../../config/database";
 
-beforeEach(async () => {
-  await pool.query("DELETE FROM users WHERE email like $1", ["%test%"]);
-});
-
 describe("POST /api/v1/auth/register", () => {
+  beforeEach(async () => {
+    await pool.query("DELETE FROM users WHERE email like $1", ["%test%"]);
+  });
+
   const userData = {
     email: "test@example.com",
     password: "Password123",

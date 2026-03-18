@@ -7,9 +7,9 @@
     "dev": "NODE_ENV=development nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "NODE_ENV=production node dist/index.js",
-    "test": "NODE_ENV=test jest",
-    "test:watch": "NODE_ENV=test jest --watch",
-    "test:coverage": "NODE_ENV=test jest --coverage"
+    "test": "NODE_ENV=test jest --runInBand",
+    "test:watch": "NODE_ENV=test jest --watch --runInBand",
+    "test:coverage": "NODE_ENV=test jest --coverage --runInBand"
   },
   "keywords": [],
   "author": "",
