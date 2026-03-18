@@ -5,6 +5,7 @@ import { sendSuccess } from "./utils/response";
 import { config } from "./config/env";
 import authRouter from "./routes/auth.routes";
 import { NotFoundError } from "./errors/AppError";
+import { authenticate } from "./middleware/auth.middleware";
 
 const app = express();
 
@@ -25,6 +26,10 @@ if (config.nodeEnv === "test") {
 
   app.get("/test/error/apperror", (req, res, next) => {
     next(new NotFoundError("Test not found"));
+  });
+
+  app.get("/test/protected", authenticate, (req, res) => {
+    sendSuccess(res, { user: req.user });
   });
 }
 
