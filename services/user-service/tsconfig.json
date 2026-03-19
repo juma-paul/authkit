@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "types": ["node", "jest"]
   },
+  "files": ["src/types/express.d.ts"],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

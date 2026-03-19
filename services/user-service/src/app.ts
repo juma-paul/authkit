@@ -1,11 +1,14 @@
 import express from "express";
 
-import { errorHandler } from "./middleware/errorHandler";
 import { sendSuccess } from "./utils/response";
 import { config } from "./config/env";
-import authRouter from "./routes/auth.routes";
 import { NotFoundError } from "./errors/AppError";
+
+import { errorHandler } from "./middleware/errorHandler";
 import { authenticate } from "./middleware/auth.middleware";
+
+import authRouter from "./routes/auth.routes";
+import userRouter from "./routes/user.routes";
 
 const app = express();
 
@@ -34,6 +37,7 @@ if (config.nodeEnv === "test") {
 }
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
 app.use(errorHandler);
 
 export default app;
