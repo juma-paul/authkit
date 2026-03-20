@@ -31,7 +31,7 @@ export const createTestUser = async (
   const result = await pool.query(
     `INSERT INTO users (tenant_id, email, password_hash, email_verified, terms_accepted, terms_accepted_at)
      VALUES ($1, $2, $3, $4, true, NOW())
-     ON CONFLICT (email) DO UPDATE SET email_verified = $4
+     ON CONFLICT (email, tenant_id) DO UPDATE SET email_verified = $4
      RETURNING id, email`,
     [tenantId, options.email, passwordHash, options.emailVerified],
   );

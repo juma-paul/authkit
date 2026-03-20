@@ -37,7 +37,7 @@ CREATE TABLE users (
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
 
     -- Identity fields
-    email VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255),
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -56,11 +56,13 @@ CREATE TABLE users (
     -- Timestamp fileds
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(email, tenant_id)
 );
 
 -- Indexes for fast lookup
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_email ON users(email, tenant_id);
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
 
 CREATE TRIGGER update_users_updated_at

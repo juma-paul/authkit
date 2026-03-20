@@ -6,3 +6,9 @@ export const updateProfileSchema = z.object({
   last_name: z.string().min(2).max(50).optional(),
   avatar_url: z.url().optional(),
 });
+
+export const changeEmailSchema = z.object({
+  newEmail: z.email(),
+  password: z.string().min(1),
+});
+
