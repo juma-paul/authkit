@@ -7,6 +7,7 @@ import {
   AccountDeletedError,
   ConflictError,
   ForbiddenError,
+  NotFoundError,
   UnauthorizedError,
   ValidationError,
 } from "../errors/AppError";
@@ -17,8 +18,9 @@ import {
   refreshTokenSchema,
 } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
-import { generateTokens } from "../utils/tokens";
+import { generateSecureToken, generateTokens } from "../utils/tokens";
 import { config } from "../config/env";
+import { sendVerificationEmail } from "../services/email.service";
 
 // Signup controller
 export const register = async (
@@ -71,6 +73,17 @@ export const register = async (
        VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
       [user.id, refreshToken],
     );
+
+    // Generate verification token and send email
+    const verificationToken = generateSecureToken();
+    await pool.query(
+      `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+   VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+      [user.id, verificationToken],
+    );
+
+    await sendVerificationEmail(user.email, verificationToken); 
+
     // Return response
     const {
       password_hash,
@@ -237,4 +250,94 @@ export const refreshTokens = async (
   } catch (error) {
     next(error);
   }
+};
+
+// Send verification controller
+export const sendVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Check user exists and is not already verified
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      [userId, req.tenantId],
+    );
+    if (!result.rows[0]) throw new NotFoundError("User not found");
+    if (result.rows[0].email_verified) {
+      return sendSuccess(res, { message: "Email already verified" });
+    }
+
+    // Delete any existing unused tokens
+    await pool.query(
+      "DELETE FROM email_verification_tokens WHERE user_id = $1",
+      [userId],
+    );
+
+    // Generate token and save to DB
+    const token = generateSecureToken();
+    await pool.query(
+      `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+      [userId, token],
+    );
+
+    // Send email
+    await sendVerificationEmail(result.rows[0].email, token);
+
+    sendSuccess(res, { message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// verify email
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token } = req.body;
+    if (!token) throw new ValidationError("Token is required");
+
+    // Find token in DB
+    const result = await pool.query(
+      `SELECT * FROM email_verification_tokens
+       WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`,
+      [token],
+    );
+    if (!result.rows[0])
+      throw new UnauthorizedError("Invalid or expired token");
+
+    const { user_id } = result.rows[0];
+
+    // Mark token as used
+    await pool.query(
+      "UPDATE email_verification_tokens SET used_at = NOW() WHERE token = $1",
+      [token],
+    );
+
+    // Mark user as verified
+    await pool.query("UPDATE users SET email_verified = true WHERE id = $1", [
+      user_id,
+    ]);
+
+    sendSuccess(res, { message: "Email verified successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Resend verification token
+export const resendVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  return sendVerification(req, res, next);
 };

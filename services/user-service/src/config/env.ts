@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config({
   path: `.env.${process.env.NODE_ENV || "development"}`,
-  quiet: true
+  quiet: true,
 });
 
 const required = [
@@ -12,6 +12,8 @@ const required = [
   "JWT_EXPIRES_IN",
   "JWT_REFRESH_SECRET",
   "JWT_REFRESH_EXPIRES_IN",
+  "RESEND_API_KEY",
+  "APP_URL",
 ];
 
 required.forEach((key) => {
@@ -27,5 +29,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET!,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN! as jwt.SignOptions["expiresIn"],
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET!,
-  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+  jwtRefreshExpiresIn: process.env
+    .JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+  resendApiKey: process.env.RESEND_API_KEY!,
+  appUrl: process.env.APP_URL!,
 };
