@@ -17,9 +17,10 @@ export const getProfile = async (
     }
 
     //Query database for user
-    const user = await pool.query("SELECT * FROM users WHERE id = $1", [
-      userId,
-    ]);
+    const user = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      [userId, req.tenantId],
+    );
     // Return user without sensitive fields
     const {
       password_hash,

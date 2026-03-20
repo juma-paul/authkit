@@ -1,10 +1,40 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- update_at auto-update trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 0). ---------------- TENANTS TABLE ----------------
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    api_key VARCHAR(255) UNIQUE NOT NULL,
+    owner_email VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    plan VARCHAR(50) DEFAULT 'free',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_tenants_api_key ON tenants(api_key);
+
+
+CREATE TRIGGER update_tenants_updated_at
+    BEFORE UPDATE ON tenants
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 -- 1). ---------------- USERS TABLE ----------------
 CREATE TABLE users (
     -- Unique identifier field
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
 
     -- Identity fields
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -32,15 +62,6 @@ CREATE TABLE users (
 -- Indexes for fast lookup
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
-
--- update_at auto-update trigger
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users

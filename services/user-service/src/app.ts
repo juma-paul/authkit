@@ -6,6 +6,7 @@ import { NotFoundError } from "./errors/AppError";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { authenticate } from "./middleware/auth.middleware";
+import { tenantMiddleware } from "./middleware/tenant.middleware";
 
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
@@ -36,8 +37,14 @@ if (config.nodeEnv === "test") {
   });
 }
 
+// All routes below require tenant
+app.use(tenantMiddleware);
+
+// Routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
+
+// Error handler
 app.use(errorHandler);
 
 export default app;

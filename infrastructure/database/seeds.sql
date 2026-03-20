@@ -1,5 +1,14 @@
+-- Seed tenant
+INSERT INTO tenants (name, api_key, owner_email)
+VALUES (
+  'BudgetApp',
+  'sk_dev_budgetapp_1234567890abcdef',
+  'admin@budgetapp.com'
+);
+
 -- Test Users (verified)
 INSERT INTO users (
+    tenant_id,
     email,
     password_hash,
     first_name,
@@ -8,6 +17,7 @@ INSERT INTO users (
     terms_accepted, 
     terms_accepted_at
 ) VALUES (
+    (SELECT id FROM tenants WHERE api_key = 'sk_dev_budgetapp_1234567890abcdef'),
     'john@example.com',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ND/qhzU6H.CO',
     'John',
@@ -19,6 +29,7 @@ INSERT INTO users (
 
 -- Test Users (unverified)
 INSERT INTO users (
+    tenant_id,
     email,
     password_hash,
     first_name,
@@ -27,6 +38,7 @@ INSERT INTO users (
     terms_accepted,
     terms_accepted_at
 ) VALUES (
+    (SELECT id FROM tenants WHERE api_key = 'sk_dev_budgetapp_1234567890abcdef'),
     'jane@example.com',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ND/qhzU6H.CO',
     'Jane',

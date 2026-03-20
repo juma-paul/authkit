@@ -22,10 +22,14 @@ export const register = async (
     // Validate input
     const validatedData = registerSchema.parse(req.body);
 
+    if (!req.tenantId) {
+      throw new UnauthorizedError("No tenant identified");
+    }
+
     // Check email doesn't exist
     const existingUser = await pool.query(
-      "SELECT id from users WHERE email = $1",
-      [validatedData.email],
+      "SELECT id from users WHERE email = $1 AND tenant_id = $2",
+      [validatedData.email, req.tenantId],
     );
 
     if (existingUser.rows.length > 0) {
@@ -37,10 +41,15 @@ export const register = async (
 
     // Save to database
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, terms_accepted, terms_accepted_at)
-             VALUES ($1, $2, $3, NOW())
+      `INSERT INTO users (tenant_id, email, password_hash, terms_accepted, terms_accepted_at)
+             VALUES ($1, $2, $3,$4, NOW())
              RETURNING id, email, terms_accepted, created_at`,
-      [validatedData.email, passwordHash, validatedData.termsAccepted],
+      [
+        req.tenantId,
+        validatedData.email,
+        passwordHash,
+        validatedData.termsAccepted,
+      ],
     );
 
     const user = result.rows[0];
@@ -80,9 +89,10 @@ export const login = async (
     const validatedData = loginSchema.parse(req.body);
 
     // Find user by email
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      validatedData.email,
-    ]);
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND tenant_id = $2",
+      [validatedData.email, req.tenantId],
+    );
 
     if (result.rows.length === 0) {
       throw new UnauthorizedError("Invalid email or password");
