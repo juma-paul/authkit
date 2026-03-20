@@ -55,13 +55,15 @@ export const generateTestRefreshToken = (
   userId: string,
   email: string,
 ): string => {
-  return jwt.sign({ userId, email }, config.jwtRefreshSecret, {
-    expiresIn: "7d",
-  });
+  return jwt.sign(
+    { userId, email, jti: crypto.randomUUID() },
+    config.jwtRefreshSecret,
+    { expiresIn: "7d" },
+  );
 };
 
 // Cleanup test data
 export const cleanupTestData = async (): Promise<void> => {
   await pool.query("DELETE FROM refresh_tokens WHERE token IS NOT NULL");
-  await pool.query("DELETE FROM users WHERE email LIKE $1", ["%example.com"]);
+  await pool.query("DELETE FROM users WHERE email LIKE $1", ["%example.com%"]);
 };

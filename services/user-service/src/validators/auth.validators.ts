@@ -22,6 +22,13 @@ export const registerSchema = z
 
 // User login schema
 export const loginSchema = z.object({
-email: z.email('Invalid email or password'),
-password: z.string()
-})
+  email: z.email("Invalid email or password"),
+  password: z.string(),
+});
+
+// User update profile schema
+export const updateProfileSchema = z.object({
+  first_name: z.string().min(2).max(50).optional(),
+  last_name: z.string().min(2).max(50).optional(),
+  avatar_url: z.url().optional()
+});
