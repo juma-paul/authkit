@@ -3,8 +3,8 @@ import bcrypt from "bcrypt";
 
 import { pool } from "../config/database";
 import { sendSuccess } from "../utils/response";
-import { NotFoundError, UnauthorizedError } from "../errors/AppError";
-import { updateProfileSchema } from "../validators/user.validators";
+import { ConflictError, NotFoundError, UnauthorizedError } from "../errors/AppError";
+import { changeEmailSchema, updateProfileSchema } from "../validators/user.validators";
 import { changePasswordSchema } from "../validators/auth.validators";
 
 // Get profile controller
@@ -139,3 +139,56 @@ export const changePassword = async (
     next(error);
   }
 };
+
+// Change email controller
+export const changeEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { newEmail, password } = changeEmailSchema.parse(req.body);
+
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Find user
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      [userId, req.tenantId],
+    );
+    if (!result.rows[0]) throw new NotFoundError("User not found");
+    const user = result.rows[0];
+
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) throw new UnauthorizedError("Invalid password");
+
+    // Check new email not already taken in this tenant
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE email = $1 AND tenant_id = $2 AND id != $3",
+      [newEmail, req.tenantId, userId],
+    );
+    if (existingUser.rows.length > 0)
+      throw new ConflictError("Email already in use");
+
+    // Update email + mark unverified
+    await pool.query(
+      `UPDATE users SET email = $1, email_verified = false WHERE id = $2 AND tenant_id = $3`,
+      [newEmail, userId, req.tenantId],
+    );
+
+    // Revoke all refresh tokens
+    await pool.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [userId],
+    );
+
+    sendSuccess(res, {
+      message: "Email changed successfully. Please verify your new email.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
