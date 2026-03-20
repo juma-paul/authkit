@@ -10,7 +10,12 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../errors/AppError";
-import { registerSchema, loginSchema } from "../validators/auth.validators";
+import {
+  registerSchema,
+  loginSchema,
+  logoutSchema,
+  refreshTokenSchema,
+} from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
 import { generateTokens } from "../utils/tokens";
 import { config } from "../config/env";
@@ -159,7 +164,7 @@ export const logout = async (
   next: NextFunction,
 ) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = logoutSchema.parse(req.body);
 
     if (!refreshToken) {
       throw new ValidationError("Refresh token is required");
@@ -184,7 +189,7 @@ export const refreshTokens = async (
   next: NextFunction,
 ) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = refreshTokenSchema.parse(req.body);
 
     if (!refreshToken) {
       throw new ValidationError("Refresh token is required");

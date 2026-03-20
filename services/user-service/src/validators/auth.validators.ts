@@ -26,9 +26,27 @@ export const loginSchema = z.object({
   password: z.string(),
 });
 
-// User update profile schema
-export const updateProfileSchema = z.object({
-  first_name: z.string().min(2).max(50).optional(),
-  last_name: z.string().min(2).max(50).optional(),
-  avatar_url: z.url().optional()
+// User logout schema
+export const logoutSchema = z.object({
+  refreshToken: z.string().min(1),
 });
+
+// Refresh token schema
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+// Change password schema
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: z
+      .string()
+      .min(8)
+      .regex(/^(?=.*[A-Z])(?=.*[0-9])/),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });

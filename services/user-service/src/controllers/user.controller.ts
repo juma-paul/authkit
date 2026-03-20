@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from "express";
+import bcrypt from "bcrypt";
 
 import { pool } from "../config/database";
 import { sendSuccess } from "../utils/response";
 import { NotFoundError, UnauthorizedError } from "../errors/AppError";
-import { updateProfileSchema } from "../validators/auth.validators";
+import { updateProfileSchema } from "../validators/user.validators";
+import { changePasswordSchema } from "../validators/auth.validators";
 
+// Get profile controller
 export const getProfile = async (
   req: Request,
   res: Response,
@@ -37,6 +40,7 @@ export const getProfile = async (
   }
 };
 
+// Update profile controller
 export const updateProfile = async (
   req: Request,
   res: Response,
@@ -79,6 +83,58 @@ export const updateProfile = async (
     } = result.rows[0];
 
     sendSuccess(res, { user: safeUser });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Change password controller
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(
+      req.body,
+    );
+
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Find user
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      [userId, req.tenantId],
+    );
+
+    if (!result.rows[0]) throw new NotFoundError("User not found");
+    const user = result.rows[0];
+
+    // Verify current password
+    const passwordMatch = await bcrypt.compare(
+      currentPassword,
+      user.password_hash,
+    );
+    if (!passwordMatch)
+      throw new UnauthorizedError("Current password is incorrect");
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await pool.query(
+      "UPDATE users SET password_hash = $1 WHERE id = $2 AND tenant_id = $3",
+      [newPasswordHash, userId, req.tenantId],
+    );
+
+    // Revoke all refresh tokens
+    await pool.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [userId],
+    );
+
+    sendSuccess(res, { message: "Password changed successfully" });
   } catch (error) {
     next(error);
   }
