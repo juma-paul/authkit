@@ -7,6 +7,7 @@ import {
   ConflictError,
   ForbiddenError,
   UnauthorizedError,
+  ValidationError,
 } from "../errors/AppError";
 import { registerSchema, loginSchema } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
@@ -144,6 +145,31 @@ export const login = async (
     } = user;
 
     sendSuccess(res, { user: safeUser, accessToken, refreshToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Logout controller
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new ValidationError("Refresh token is required");
+    }
+
+    await pool.query(
+      `UPDATE refresh_tokens SET revoked_at = NOW()
+       WHERE token = $1 AND revoked_at IS NULL`,
+      [refreshToken],
+    );
+
+    sendSuccess(res, { message: "Logged out successfully" });
   } catch (error) {
     next(error);
   }
