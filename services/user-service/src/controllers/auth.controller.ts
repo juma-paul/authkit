@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 import { Response, Request, NextFunction } from "express";
 import { pool } from "../config/database";
@@ -12,6 +13,7 @@ import {
 import { registerSchema, loginSchema } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
 import { generateTokens } from "../utils/tokens";
+import { config } from "../config/env";
 
 // Signup controller
 export const register = async (
@@ -170,6 +172,63 @@ export const logout = async (
     );
 
     sendSuccess(res, { message: "Logged out successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GetRefreshToken controller
+export const refreshTokens = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new ValidationError("Refresh token is required");
+    }
+
+    // Verify JWT
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
+    } catch (error) {
+      return next(new UnauthorizedError("Invalid or expired refresh token"));
+    }
+
+    // Check token exists in DB and not revoked
+    const tokenRecord = await pool.query(
+      `SELECT * FROM refresh_tokens 
+       WHERE token = $1 AND revoked_at IS NULL AND expires_at > NOW()`,
+      [refreshToken],
+    );
+
+    if (tokenRecord.rows.length === 0) {
+      throw new UnauthorizedError("Invalid or expired refresh token");
+    }
+
+    // Revoke old refresh token
+    await pool.query(
+      `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1`,
+      [refreshToken],
+    );
+
+    // Generate new tokens
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+      decoded.userId,
+      decoded.email,
+    );
+
+    // Save new refresh token
+    await pool.query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+      [tokenRecord.rows[0].user_id, newRefreshToken],
+    );
+
+    sendSuccess(res, { accessToken, refreshToken: newRefreshToken });
   } catch (error) {
     next(error);
   }
