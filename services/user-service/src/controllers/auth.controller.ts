@@ -16,11 +16,13 @@ import {
   loginSchema,
   logoutSchema,
   refreshTokenSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
 } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
 import { generateSecureToken, generateTokens } from "../utils/tokens";
 import { config } from "../config/env";
-import { sendVerificationEmail } from "../services/email.service";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../services/email.service";
 
 // Signup controller
 export const register = async (
@@ -341,3 +343,99 @@ export const resendVerification = async (
 ) => {
   return sendVerification(req, res, next);
 };
+
+// Forgot password controller
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    // Find user by email + tenant
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND tenant_id = $2",
+      [email, req.tenantId],
+    );
+
+    // Always send 200 to prevent email enumeration attacks
+    if (!result.rows[0]) {
+      return sendSuccess(res, {
+        message: "If that email exists, a reset link has been sent",
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Delete any existing reset tokens
+    await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [
+      user.id,
+    ]);
+
+    // Generate token + save to DB
+    const token = generateSecureToken();
+    await pool.query(
+      `INSERT INTO password_reset_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '1 hour')`,
+      [user.id, token],
+    );
+
+    // Send email
+    await sendPasswordResetEmail(email, token);
+
+    sendSuccess(res, {
+      message: "If that email exists, a reset link has been sent",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reset password controller
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token, newPassword } = resetPasswordSchema.parse(req.body);
+
+    // Find valid token
+    const result = await pool.query(
+      `SELECT * FROM password_reset_tokens
+       WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`,
+      [token],
+    );
+    if (!result.rows[0])
+      throw new UnauthorizedError("Invalid or expired token");
+
+    const { user_id } = result.rows[0];
+
+    // Mark token as used
+    await pool.query(
+      "UPDATE password_reset_tokens SET used_at = NOW() WHERE token = $1",
+      [token],
+    );
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+      passwordHash,
+      user_id,
+    ]);
+
+    // Revoke all refresh tokens
+    await pool.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [user_id],
+    );
+
+    sendSuccess(res, { message: "Password reset successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+

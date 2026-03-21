@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-
 import { config } from "../config/env";
 
 export const generateTokens = (userId: string, email: string) => {
@@ -19,4 +18,3 @@ export const generateTokens = (userId: string, email: string) => {
 export const generateSecureToken = (): string => {
   return crypto.randomBytes(32).toString("hex");
 };
-
