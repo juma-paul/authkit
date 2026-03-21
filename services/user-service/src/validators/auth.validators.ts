@@ -1,24 +1,36 @@
 import { z } from "zod";
 
-// User registrationn schema
+// Reusable Validators
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+export const confirmPasswordSchema = z.string();
+
+export const passwordMatchRefinement = {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+};
+
+// Schemas
+
+// User registration schema
 export const registerSchema = z
   .object({
     email: z.email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain atleast one number"),
-    confirmPassword: z.string(),
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
     termsAccepted: z.literal(true, {
       error: "You must accept the terms and conditions",
     }),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+  .refine(
+    (data) => data.password === data.confirmPassword,
+    passwordMatchRefinement,
+  );
 
 // User login schema
 export const loginSchema = z.object({
@@ -40,13 +52,27 @@ export const refreshTokenSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z
-      .string()
-      .min(8)
-      .regex(/^(?=.*[A-Z])(?=.*[0-9])/),
-    confirmPassword: z.string(),
+    newPassword: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+  .refine(
+    (data) => data.newPassword === data.confirmPassword,
+    passwordMatchRefinement,
+  );
+
+// Forgot password schema
+export const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+// Reset password schema
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1),
+    newPassword: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine(
+    (data) => data.newPassword === data.confirmPassword,
+    passwordMatchRefinement,
+  );
