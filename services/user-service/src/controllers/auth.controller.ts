@@ -142,6 +142,15 @@ export const login = async (
       throw new ForbiddenError("Please verify your email before logging in");
     }
 
+    // Check if 2FA enabled
+    const twoFA = await pool.query(
+      "SELECT * FROM two_factor_auth WHERE user_id = $1 AND enabled = true",
+      [user.id],
+    );
+    if (twoFA.rows.length > 0) {
+      return sendSuccess(res, { requires2FA: true, userId: user.id });
+    }
+
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id, user.email);
 

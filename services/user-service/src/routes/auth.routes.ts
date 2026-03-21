@@ -11,6 +11,7 @@ import {
   verifyEmail,
 } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth.middleware";
+import { validate2FA } from "../controllers/twoFactor.controller";
 
 const router = Router();
 
@@ -28,5 +29,7 @@ router.post("/resend-verification", authenticate, resendVerification);
 // Password Reset
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+router.post("/2fa/validate", validate2FA);
 
 export default router;

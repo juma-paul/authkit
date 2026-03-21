@@ -147,7 +147,8 @@ CREATE TABLE two_factor_auth (
     enabled BOOLEAN DEFAULT FALSE,
     backup_codes TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
 );
 
 CREATE INDEX idx_two_factor_auth_user_id ON two_factor_auth(user_id);
