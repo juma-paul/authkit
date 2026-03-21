@@ -20,9 +20,16 @@ import {
   forgotPasswordSchema,
 } from "../validators/auth.validators";
 import { sendSuccess } from "../utils/response";
-import { generateSecureToken, generateTokens } from "../utils/tokens";
+import {
+  generateOAuthState,
+  generateSecureToken,
+  generateTokens,
+} from "../utils/tokens";
 import { config } from "../config/env";
-import { sendPasswordResetEmail, sendVerificationEmail } from "../services/email.service";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "../services/email.service";
 
 // Signup controller
 export const register = async (
@@ -84,7 +91,7 @@ export const register = async (
       [user.id, verificationToken],
     );
 
-    await sendVerificationEmail(user.email, verificationToken); 
+    await sendVerificationEmail(user.email, verificationToken);
 
     // Return response
     const {
@@ -448,3 +455,30 @@ export const resetPassword = async (
   }
 };
 
+// Get oauth url
+export const getOAuthUrl = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { provider } = req.query;
+    if (!req.tenantId) throw new UnauthorizedError("No tenant identified");
+
+    const state = generateOAuthState(req.tenantId);
+    const baseUrl = `${config.appUrl}/api/v1/auth`;
+
+    const urls: Record<string, string> = {
+      google: `${baseUrl}/google?state=${state}`,
+      github: `${baseUrl}/github?state=${state}`,
+    };
+
+    if (!urls[provider as string]) {
+      throw new ValidationError("Invalid provider");
+    }
+
+    sendSuccess(res, { url: urls[provider as string] });
+  } catch (error) {
+    next(error);
+  }
+};

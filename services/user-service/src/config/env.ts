@@ -14,6 +14,12 @@ const required = [
   "JWT_REFRESH_EXPIRES_IN",
   "RESEND_API_KEY",
   "APP_URL",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "GOOGLE_CALLBACK_URL",
+  "GITHUB_CLIENT_ID",
+  "GITHUB_CLIENT_SECRET",
+  "GITHUB_CALLBACK_URL",
 ];
 
 required.forEach((key) => {
@@ -33,4 +39,10 @@ export const config = {
     .JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   resendApiKey: process.env.RESEND_API_KEY!,
   appUrl: process.env.APP_URL!,
+  googleClientId: process.env.GOOGLE_CLIENT_ID!,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL!,
+  githubClientId: process.env.GITHUB_CLIENT_ID!,
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET!,
+  githubCallbackUrl: process.env.GITHUB_CALLBACK_URL!,
 };

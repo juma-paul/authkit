@@ -177,6 +177,10 @@ export const validate2FA = async (
       [userId, refreshToken],
     );
 
+    await pool.query("UPDATE users SET last_login_at = NOW() WHERE id = $1", [
+      userId,
+    ]);
+
     sendSuccess(res, { accessToken, refreshToken });
   } catch (error) {
     next(error);

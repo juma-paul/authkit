@@ -3,6 +3,7 @@ import express from "express";
 import { sendSuccess } from "./utils/response";
 import { config } from "./config/env";
 import { NotFoundError } from "./errors/AppError";
+import passport from "./config/passport";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { authenticate } from "./middleware/auth.middleware";
@@ -10,10 +11,12 @@ import { tenantMiddleware } from "./middleware/tenant.middleware";
 
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
+import oauthRouter from "./routes/oauth.routes";
 
 const app = express();
 
 app.use(express.json());
+app.use(passport.initialize());
 
 app.get("/health", (req, res) => {
   sendSuccess(res, {
@@ -38,11 +41,17 @@ if (config.nodeEnv === "test") {
 }
 
 // All routes below require tenant
-app.use(tenantMiddleware);
+app.use((req, res, next) => {
+  if (req.path.includes("/auth/google") || req.path.includes("/auth/github")) {
+    return next();
+  }
+  tenantMiddleware(req, res, next);
+});
 
 // Routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/auth", oauthRouter);
 
 // Error handler
 app.use(errorHandler);

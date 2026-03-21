@@ -18,3 +18,12 @@ export const generateTokens = (userId: string, email: string) => {
 export const generateSecureToken = (): string => {
   return crypto.randomBytes(32).toString("hex");
 };
+
+export const generateOAuthState = (tenantId: string): string => {
+  return jwt.sign({ tenantId }, config.jwtSecret, { expiresIn: "10m" });
+};
+
+export const verifyOAuthState = (state: string): { tenantId: string } => {
+  return jwt.verify(state, config.jwtSecret) as { tenantId: string };
+};
+

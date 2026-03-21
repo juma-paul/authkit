@@ -8,7 +8,7 @@ export const tenantMiddleware = async (
   next: NextFunction,
 ) => {
   // Read api key
-  const apiKey = req.header("X-API-Key");
+  const apiKey = req.header("X-API-Key") || (req.query.apiKey as string);
 
   if (!apiKey) {
     return next(new UnauthorizedError("No API key provided"));
