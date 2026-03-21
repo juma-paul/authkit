@@ -3,7 +3,9 @@ import { Router } from "express";
 import {
   changeEmail,
   changePassword,
+  deleteAccount,
   getProfile,
+  restoreAccount,
   updateProfile,
 } from "../controllers/user.controller";
 import { authenticate } from "../middleware/auth.middleware";
@@ -24,5 +26,8 @@ router.put("/change-email", authenticate, changeEmail);
 router.post("/2fa/setup", authenticate, setup2FA);
 router.post("/2fa/verify", authenticate, verify2FA);
 router.post("/2fa/disable", authenticate, disable2FA);
+
+router.delete("/account", authenticate, deleteAccount);
+router.post("/account/restore", restoreAccount);
 
 export default router;

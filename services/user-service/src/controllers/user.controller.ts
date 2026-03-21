@@ -3,9 +3,18 @@ import bcrypt from "bcrypt";
 
 import { pool } from "../config/database";
 import { sendSuccess } from "../utils/response";
-import { ConflictError, NotFoundError, UnauthorizedError } from "../errors/AppError";
-import { changeEmailSchema, updateProfileSchema } from "../validators/user.validators";
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../errors/AppError";
+import {
+  changeEmailSchema,
+  updateProfileSchema,
+} from "../validators/user.validators";
 import { changePasswordSchema } from "../validators/auth.validators";
+import { generateSecureToken } from "../utils/tokens";
 
 // Get profile controller
 export const getProfile = async (
@@ -192,3 +201,93 @@ export const changeEmail = async (
   }
 };
 
+// Delete account controller
+export const deleteAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Find user
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      [userId, req.tenantId],
+    );
+    if (!result.rows[0]) throw new NotFoundError("User not found");
+    const user = result.rows[0];
+
+    // Check not already deleted
+    if (user.deleted_at) throw new ConflictError("Account already deleted");
+
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) throw new UnauthorizedError("Invalid password");
+
+    // Generate restore token
+    const restoreToken = generateSecureToken();
+    const restoreTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    // Soft delete
+    await pool.query(
+      `UPDATE users SET 
+        deleted_at = NOW(),
+        restore_token = $1,
+        restore_token_expires_at = $2
+       WHERE id = $3`,
+      [restoreToken, restoreTokenExpiry, userId],
+    );
+
+    // Revoke all refresh tokens
+    await pool.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [userId],
+    );
+
+    sendSuccess(res, {
+      message: "Account deleted. You have 30 days to restore it.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Restore account controller
+export const restoreAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token } = req.body;
+    if (!token) throw new ValidationError("Restore token is required");
+
+    // Find user with valid restore token
+    const result = await pool.query(
+      `SELECT * FROM users 
+       WHERE restore_token = $1 
+       AND restore_token_expires_at > NOW()
+       AND deleted_at IS NOT NULL`,
+      [token],
+    );
+    if (!result.rows[0])
+      throw new UnauthorizedError("Invalid or expired restore token");
+
+    // Restore account
+    await pool.query(
+      `UPDATE users SET 
+        deleted_at = NULL,
+        restore_token = NULL,
+        restore_token_expires_at = NULL
+       WHERE id = $1`,
+      [result.rows[0].id],
+    );
+
+    sendSuccess(res, { message: "Account restored successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
