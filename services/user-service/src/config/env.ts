@@ -20,6 +20,7 @@ const required = [
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
   "GITHUB_CALLBACK_URL",
+  "ADMIN_SECRET",
 ];
 
 required.forEach((key) => {
@@ -45,4 +46,5 @@ export const config = {
   githubClientId: process.env.GITHUB_CLIENT_ID!,
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET!,
   githubCallbackUrl: process.env.GITHUB_CALLBACK_URL!,
+  adminSecret: process.env.ADMIN_SECRET!,
 };

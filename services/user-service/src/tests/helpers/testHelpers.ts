@@ -38,11 +38,14 @@ export const createTestUser = async (
   return result.rows[0];
 };
 
-// Get test tenant id
 export const getTestTenantId = async (): Promise<string> => {
-  const result = await pool.query("SELECT id FROM tenants WHERE api_key = $1", [
-    TEST_API_KEY,
-  ]);
+  const result = await pool.query(
+    `INSERT INTO tenants (name, api_key, owner_email)
+     VALUES ('BudgetApp', $1, 'admin@budgetapp.com')
+     ON CONFLICT (api_key) DO UPDATE SET name = 'BudgetApp'
+     RETURNING id`,
+    [TEST_API_KEY],
+  );
   return result.rows[0].id;
 };
 
@@ -66,4 +69,5 @@ export const generateTestRefreshToken = (
 export const cleanupTestData = async (): Promise<void> => {
   await pool.query("DELETE FROM refresh_tokens WHERE token IS NOT NULL");
   await pool.query("DELETE FROM users WHERE email LIKE $1", ["%example.com%"]);
+  await pool.query("DELETE FROM tenants WHERE name = 'TestApp'");
 };
