@@ -9,13 +9,11 @@ export const authenticate = (
   res: Response,
   next: NextFunction,
 ): void => {
-  const authHeader = req.header("Authorization");
+  const token = req.cookies.accessToken;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return next(new UnauthorizedError("No token provided"));
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret);
@@ -25,3 +23,4 @@ export const authenticate = (
     next(new UnauthorizedError("Invalid or expired token"));
   }
 };
+

@@ -32,7 +32,7 @@ describe("PUT /api/v1/users/change-password", () => {
   it("should change password successfully", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-password")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({
         currentPassword: "Password123",
@@ -47,7 +47,7 @@ describe("PUT /api/v1/users/change-password", () => {
   it("should return 401 for wrong current password", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-password")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({
         currentPassword: "WrongPassword",
@@ -61,7 +61,7 @@ describe("PUT /api/v1/users/change-password", () => {
   it("should return 400 for mismatched new passwords", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-password")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({
         currentPassword: "Password123",
@@ -82,7 +82,7 @@ describe("PUT /api/v1/users/change-password", () => {
 
     await request(app)
       .put("/api/v1/users/change-password")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({
         currentPassword: "Password123",

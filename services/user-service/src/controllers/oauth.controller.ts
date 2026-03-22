@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../config/database";
-import { sendSuccess } from "../utils/response";
 import { generateTokens } from "../utils/tokens";
+import { setTokenCookies } from "../utils/cookies";
 
 export const oauthCallback = async (
   req: Request,
@@ -26,7 +26,7 @@ export const oauthCallback = async (
       user.id,
     ]);
 
-    sendSuccess(res, { accessToken, refreshToken });
+    setTokenCookies(res, accessToken, refreshToken);
   } catch (error) {
     next(error);
   }

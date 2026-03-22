@@ -38,16 +38,6 @@ export const loginSchema = z.object({
   password: z.string(),
 });
 
-// User logout schema
-export const logoutSchema = z.object({
-  refreshToken: z.string().min(1),
-});
-
-// Refresh token schema
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1),
-});
-
 // Change password schema
 export const changePasswordSchema = z
   .object({

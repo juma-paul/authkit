@@ -34,7 +34,7 @@ describe("2FA", () => {
     it("should return QR code and secret", async () => {
       const res = await request(app)
         .post("/api/v1/users/2fa/setup")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY);
 
       expect(res.status).toBe(200);
@@ -72,7 +72,7 @@ describe("2FA", () => {
 
       const res = await request(app)
         .post("/api/v1/users/2fa/verify")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ code });
 
@@ -83,7 +83,7 @@ describe("2FA", () => {
     it("should return 401 for invalid code", async () => {
       const res = await request(app)
         .post("/api/v1/users/2fa/verify")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ code: "000000" });
 
@@ -95,7 +95,7 @@ describe("2FA", () => {
 
       const res = await request(app)
         .post("/api/v1/users/2fa/verify")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ code });
 
@@ -121,7 +121,7 @@ describe("2FA", () => {
 
       const res = await request(app)
         .post("/api/v1/users/2fa/disable")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ code });
 
@@ -132,7 +132,7 @@ describe("2FA", () => {
     it("should return 401 for invalid code", async () => {
       const res = await request(app)
         .post("/api/v1/users/2fa/disable")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ code: "000000" });
 
@@ -161,8 +161,7 @@ describe("2FA", () => {
         .send({ userId, code });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.accessToken).toBeDefined();
-      expect(res.body.data.refreshToken).toBeDefined();
+      expect(res.headers['set-cookie']).toBeDefined();
     });
 
     it("should return 401 for invalid code", async () => {

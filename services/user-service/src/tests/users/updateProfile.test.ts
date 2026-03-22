@@ -29,7 +29,7 @@ describe("PUT /api/v1/users/profile", () => {
   it("should update first_name and last_name successfully", async () => {
     const res = await request(app)
       .put("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ first_name: "John", last_name: "Doe" });
 
@@ -42,14 +42,14 @@ describe("PUT /api/v1/users/profile", () => {
     // First set both names
     await request(app)
       .put("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ first_name: "John", last_name: "Doe" });
 
     // Then update only first_name
     const res = await request(app)
       .put("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ first_name: "Jane" });
 
@@ -61,7 +61,7 @@ describe("PUT /api/v1/users/profile", () => {
   it("should return 400 for invalid avatar_url", async () => {
     const res = await request(app)
       .put("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ avatar_url: "not-a-url" });
 
@@ -81,7 +81,7 @@ describe("PUT /api/v1/users/profile", () => {
   it("should not return sensitive fields", async () => {
     const res = await request(app)
       .put("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ first_name: "John" });
 

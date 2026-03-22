@@ -14,8 +14,6 @@ import {
 import {
   registerSchema,
   loginSchema,
-  logoutSchema,
-  refreshTokenSchema,
   resetPasswordSchema,
   forgotPasswordSchema,
 } from "../validators/auth.validators";
@@ -30,6 +28,8 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "../services/email.service";
+
+import { setTokenCookies, clearTokenCookies } from "../utils/cookies";
 
 // Signup controller
 export const register = async (
@@ -102,7 +102,8 @@ export const register = async (
       ...safeUser
     } = user;
 
-    sendSuccess(res, { user: safeUser, accessToken, refreshToken }, 201);
+    setTokenCookies(res, accessToken, refreshToken);
+    sendSuccess(res, { user: safeUser }, 201);
   } catch (error) {
     next(error);
   }
@@ -182,7 +183,8 @@ export const login = async (
       ...safeUser
     } = user;
 
-    sendSuccess(res, { user: safeUser, accessToken, refreshToken });
+    setTokenCookies(res, accessToken, refreshToken);
+    sendSuccess(res, { user: safeUser });
   } catch (error) {
     next(error);
   }
@@ -195,17 +197,22 @@ export const logout = async (
   next: NextFunction,
 ) => {
   try {
-    const { refreshToken } = logoutSchema.parse(req.body);
+    // Read refresh token from cookie
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      throw new ValidationError("Refresh token is required");
+      throw new ValidationError("No refresh token provided");
     }
 
+    // Revoke token
     await pool.query(
       `UPDATE refresh_tokens SET revoked_at = NOW()
        WHERE token = $1 AND revoked_at IS NULL`,
       [refreshToken],
     );
+
+    // Clear cookies
+    clearTokenCookies(res);
 
     sendSuccess(res, { message: "Logged out successfully" });
   } catch (error) {
@@ -220,7 +227,7 @@ export const refreshTokens = async (
   next: NextFunction,
 ) => {
   try {
-    const { refreshToken } = refreshTokenSchema.parse(req.body);
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
       throw new ValidationError("Refresh token is required");
@@ -263,8 +270,8 @@ export const refreshTokens = async (
        VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
       [tokenRecord.rows[0].user_id, newRefreshToken],
     );
-
-    sendSuccess(res, { accessToken, refreshToken: newRefreshToken });
+    setTokenCookies(res, accessToken, newRefreshToken);
+    sendSuccess(res, { message: "Tokens refreshed successfully" });
   } catch (error) {
     next(error);
   }

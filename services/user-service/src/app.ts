@@ -1,5 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 
 import passport from "./config/passport";
 import { config } from "./config/env";
@@ -17,6 +18,7 @@ const app = express();
 
 // CORE MIDDLEWARE
 app.use(express.json());
+app.use(cookieParser());
 app.use(passport.initialize());
 
 // RATE LIMITING

@@ -21,8 +21,7 @@ describe("POST /api/v1/auth/register", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.accessToken).toBeDefined();
-    expect(res.body.data.refreshToken).toBeDefined();
+    expect(res.headers["set-cookie"]).toBeDefined();
     expect(res.body.data.user.password_hash).toBeUndefined();
     expect(res.body.data.user.email).toBe("test@example.com");
   });

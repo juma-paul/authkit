@@ -15,7 +15,7 @@ describe("GET /test/protected", () => {
   it("should return 401 for invalid token", async () => {
     const res = await request(app)
       .get("/test/protected")
-      .set("Authorization", "Bearer invalidToken");
+      .set("Cookie", `accessToken=invalidToken`);
 
     expect(res.status).toBe(401);
   });
@@ -30,7 +30,7 @@ describe("GET /test/protected", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     const res = await request(app)
       .get("/test/protected")
-      .set("Authorization", `Bearer ${expiredToken}`);
+      .set("Cookie", `accessToken=${expiredToken}`);
 
     expect(res.status).toBe(401);
   });
@@ -44,7 +44,7 @@ describe("GET /test/protected", () => {
 
     const res = await request(app)
       .get("/test/protected")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Cookie", `accessToken=${token}`);
 
     expect(res.status).toBe(200);
   });

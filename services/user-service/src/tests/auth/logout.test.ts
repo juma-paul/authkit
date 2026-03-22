@@ -39,9 +39,11 @@ describe("POST /api/v1/auth/logout", () => {
   it("should logout successfully with valid refresh token", async () => {
     const res = await request(app)
       .post("/api/v1/auth/logout")
-      .set("Authorization", `Bearer ${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set(
+        "Cookie",
+        `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      );
 
     expect(res.status).toBe(200);
     expect(res.body.data.message).toBe("Logged out successfully");
@@ -50,9 +52,8 @@ describe("POST /api/v1/auth/logout", () => {
   it("should return 400 when no refresh token provided", async () => {
     const res = await request(app)
       .post("/api/v1/auth/logout")
-      .set("Authorization", `Bearer ${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
-      .send({});
+      .set("Cookie", `accessToken=${accessToken};`);
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
@@ -62,7 +63,7 @@ describe("POST /api/v1/auth/logout", () => {
     const res = await request(app)
       .post("/api/v1/auth/logout")
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set("Cookie", `refreshToken=${refreshToken}`);
 
     expect(res.status).toBe(401);
   });
@@ -71,15 +72,19 @@ describe("POST /api/v1/auth/logout", () => {
     // Logout twice
     await request(app)
       .post("/api/v1/auth/logout")
-      .set("Authorization", `Bearer ${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set(
+        "Cookie",
+        `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      );
 
     const res = await request(app)
       .post("/api/v1/auth/logout")
-      .set("Authorization", `Bearer ${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set(
+        "Cookie",
+        `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      );
 
     expect(res.status).toBe(200);
   });

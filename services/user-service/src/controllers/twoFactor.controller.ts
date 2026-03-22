@@ -10,6 +10,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "../errors/AppError";
+import { setTokenCookies } from "../utils/cookies";
 
 // Setup 2FA
 export const setup2FA = async (
@@ -181,7 +182,8 @@ export const validate2FA = async (
       userId,
     ]);
 
-    sendSuccess(res, { accessToken, refreshToken });
+    setTokenCookies(res, accessToken, refreshToken);
+    sendSuccess(res, { message: "2FA validated successfully" });
   } catch (error) {
     next(error);
   }

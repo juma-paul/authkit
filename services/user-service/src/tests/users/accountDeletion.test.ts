@@ -33,7 +33,7 @@ describe("Account Deletion + Restore", () => {
     it("should soft delete account successfully", async () => {
       const res = await request(app)
         .delete("/api/v1/users/account")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ password: "Password123" });
 
@@ -52,7 +52,7 @@ describe("Account Deletion + Restore", () => {
     it("should return 401 for wrong password", async () => {
       const res = await request(app)
         .delete("/api/v1/users/account")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ password: "WrongPassword" });
 
@@ -63,14 +63,14 @@ describe("Account Deletion + Restore", () => {
       // Delete first time
       await request(app)
         .delete("/api/v1/users/account")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ password: "Password123" });
 
       // Try to delete again
       const res = await request(app)
         .delete("/api/v1/users/account")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ password: "Password123" });
 
@@ -86,7 +86,7 @@ describe("Account Deletion + Restore", () => {
 
       await request(app)
         .delete("/api/v1/users/account")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY)
         .send({ password: "Password123" });
 

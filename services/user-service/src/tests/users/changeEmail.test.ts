@@ -29,7 +29,7 @@ describe("PUT /api/v1/users/change-email", () => {
   it("should change email successfully", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-email")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ newEmail: "newemail@example.com", password: "Password123" });
 
@@ -40,7 +40,7 @@ describe("PUT /api/v1/users/change-email", () => {
   it("should return 401 for wrong password", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-email")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ newEmail: "newemail@example.com", password: "WrongPassword" });
 
@@ -55,7 +55,7 @@ describe("PUT /api/v1/users/change-email", () => {
 
     const res = await request(app)
       .put("/api/v1/users/change-email")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ newEmail: "taken@example.com", password: "Password123" });
 
@@ -65,7 +65,7 @@ describe("PUT /api/v1/users/change-email", () => {
   it("should return 400 for invalid email", async () => {
     const res = await request(app)
       .put("/api/v1/users/change-email")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ newEmail: "not-an-email", password: "Password123" });
 
@@ -84,7 +84,7 @@ describe("PUT /api/v1/users/change-email", () => {
   it("should set email_verified to false after change", async () => {
     await request(app)
       .put("/api/v1/users/change-email")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set('Cookie', `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY)
       .send({ newEmail: "newemail@example.com", password: "Password123" });
 

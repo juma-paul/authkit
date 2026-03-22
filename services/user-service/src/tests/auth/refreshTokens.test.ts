@@ -44,20 +44,16 @@ describe("POST /api/v1/auth/refresh", () => {
     const res = await request(app)
       .post("/api/v1/auth/refresh")
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set("Cookie", `refreshToken=${refreshToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.accessToken).toBeDefined();
-    expect(res.body.data.refreshToken).toBeDefined();
-    // New refresh token should be different from old one
-    expect(res.body.data.refreshToken).not.toBe(refreshToken);
+    expect(res.headers["set-cookie"]).toBeDefined();
   });
 
   it("should return 400 when no refresh token provided", async () => {
     const res = await request(app)
       .post("/api/v1/auth/refresh")
-      .set("X-API-Key", TEST_API_KEY)
-      .send({});
+      .set("X-API-Key", TEST_API_KEY);
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
@@ -74,7 +70,7 @@ describe("POST /api/v1/auth/refresh", () => {
     const res = await request(app)
       .post("/api/v1/auth/refresh")
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken: expiredToken });
+      .set("Cookie", `refreshToken=${expiredToken}`);
 
     expect(res.status).toBe(401);
   });
@@ -89,7 +85,7 @@ describe("POST /api/v1/auth/refresh", () => {
     const res = await request(app)
       .post("/api/v1/auth/refresh")
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set("Cookie", `refreshToken=${refreshToken}`);
 
     expect(res.status).toBe(401);
   });
@@ -98,7 +94,7 @@ describe("POST /api/v1/auth/refresh", () => {
     await request(app)
       .post("/api/v1/auth/refresh")
       .set("X-API-Key", TEST_API_KEY)
-      .send({ refreshToken });
+      .set("Cookie", `refreshToken=${refreshToken}`);
 
     // Old token should now be revoked
     const result = await pool.query(

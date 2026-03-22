@@ -29,7 +29,7 @@ describe("GET /api/v1/users/profile", () => {
   it("should return 200 with data for valid token", async () => {
     const res = await request(app)
       .get("/api/v1/users/profile")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", `accessToken=${accessToken}`)
       .set("X-API-Key", TEST_API_KEY);
 
     expect(res.status).toBe(200);
@@ -48,7 +48,7 @@ describe("GET /api/v1/users/profile", () => {
   it("should return 401 for invalid token", async () => {
     const res = await request(app)
       .get("/api/v1/users/profile")
-      .set("Authorization", "Bearer invalidtoken")
+      .set("Cookie", `accessToken=invalidToken`)
       .set("X-API-Key", TEST_API_KEY);
 
     expect(res.status).toBe(401);

@@ -41,7 +41,7 @@ describe("Email Verification", () => {
     it("should send verification email successfully", async () => {
       const res = await request(app)
         .post("/api/v1/auth/send-verification")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY);
 
       expect(res.status).toBe(200);
@@ -55,7 +55,7 @@ describe("Email Verification", () => {
 
       const res = await request(app)
         .post("/api/v1/auth/send-verification")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY);
 
       expect(res.status).toBe(200);
@@ -143,7 +143,7 @@ describe("Email Verification", () => {
     it("should resend verification email", async () => {
       const res = await request(app)
         .post("/api/v1/auth/resend-verification")
-        .set("Authorization", `Bearer ${accessToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .set("X-API-Key", TEST_API_KEY);
 
       expect(res.status).toBe(200);
