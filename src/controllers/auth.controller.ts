@@ -73,16 +73,6 @@ export const register = async (
 
     const user = result.rows[0];
 
-    // Generate JWT
-    const { accessToken, refreshToken } = generateTokens(user.id, user.email);
-
-    // Save refresh token to database
-    await pool.query(
-      `INSERT INTO refresh_tokens (user_id, token, expires_at)
-       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
-      [user.id, refreshToken],
-    );
-
     // Generate verification token and send email
     const verificationToken = generateSecureToken();
     await pool.query(
@@ -102,7 +92,6 @@ export const register = async (
       ...safeUser
     } = user;
 
-    setTokenCookies(res, accessToken, refreshToken);
     sendSuccess(res, { user: safeUser }, 201);
   } catch (error) {
     next(error);

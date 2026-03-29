@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 import passport from "./config/passport";
 import { config } from "./config/env";
@@ -18,6 +19,13 @@ const app = express();
 
 // CORE MIDDLEWARE
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  }),
+);
+
 app.use(cookieParser());
 app.use(passport.initialize());
 
