@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
 import { config } from "../config/env";
-import { UnauthorizedError } from "../errors/AppError";
+import { TokenExpiredError, UnauthorizedError } from "../errors/AppError";
 
 export const authenticate = (
   req: Request,
@@ -20,7 +20,10 @@ export const authenticate = (
     req.user = decoded as { userId: string; email: string };
     next();
   } catch (error) {
-    next(new UnauthorizedError("Invalid or expired token"));
+    if (error instanceof jwt.TokenExpiredError) {
+      return next(new TokenExpiredError());
+    }
+    next(new UnauthorizedError("Invalid token"));
   }
 };
 

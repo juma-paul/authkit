@@ -23,8 +23,8 @@ export const registerSchema = z
     email: z.email("Invalid email address"),
     password: passwordSchema,
     confirmPassword: confirmPasswordSchema,
-    termsAccepted: z.literal(true, {
-      error: "You must accept the terms and conditions",
+    termsAccepted: z.boolean().refine((val) => val === true, {
+      message: "You must accept the terms and conditions",
     }),
   })
   .refine(
