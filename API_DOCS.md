@@ -253,8 +253,7 @@ POST /auth/reset-password
 ```json
 {
   "token": "reset_token_from_email",
-  "password": "NewPassword123",
-  "confirmPassword": "NewPassword123"
+  "newPassword": "NewPassword123",
 }
 ```
 
@@ -637,7 +636,6 @@ PUT /users/change-password
 {
   "currentPassword": "OldPassword123",
   "newPassword": "NewPassword123",
-  "confirmPassword": "NewPassword123"
 }
 ```
 
