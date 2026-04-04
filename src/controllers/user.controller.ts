@@ -32,7 +32,17 @@ export const getProfile = async (
 
     //Query database for user
     const user = await pool.query(
-      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      `
+      SELECT 
+        u.*, 
+        COALESCE(tfa.enabled, false) as two_factor_enabled
+      FROM users u
+      LEFT JOIN two_factor_auth tfa 
+        ON tfa.user_id = u.id
+      WHERE 
+        u.id = $1 
+        AND u.tenant_id = $2
+      `,
       [userId, req.tenantId],
     );
     // Return user without sensitive fields
@@ -69,7 +79,8 @@ export const updateProfile = async (
        SET first_name = COALESCE($1, first_name),
            last_name = COALESCE($2, last_name),
            avatar_url = COALESCE($3, avatar_url)
-       WHERE id = $4 AND tenant_id = $5
+       WHERE id = $4 
+        AND tenant_id = $5
        RETURNING *`,
       [
         validatedData.first_name,
@@ -251,7 +262,6 @@ export const verifyEmailChange = async (
     next(error);
   }
 };
-
 
 // Delete account controller
 export const deleteAccount = async (
