@@ -24,7 +24,7 @@ router.post("/refresh", refreshTokens);
 // Email verification
 router.post("/send-verification", authenticate, sendVerification);
 router.post("/verify-email", verifyEmail);
-router.post("/resend-verification", authenticate, resendVerification);
+router.post("/resend-verification", resendVerification);
 
 // Password Reset
 router.post("/forgot-password", forgotPassword);

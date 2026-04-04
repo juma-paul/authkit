@@ -3,16 +3,19 @@
 ## Overview
 
 **Base URL**
+
 ```
 http://localhost:3002/api/v1
 ```
 
 **All endpoints require:**
+
 ```
 X-API-Key: your_tenant_api_key
 ```
 
 **Response format:**
+
 ```json
 {
   "success": true,
@@ -22,6 +25,7 @@ X-API-Key: your_tenant_api_key
 ```
 
 **Error format:**
+
 ```json
 {
   "success": false,
@@ -37,30 +41,33 @@ X-API-Key: your_tenant_api_key
 
 ## Error Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `VALIDATION_ERROR` | 400 | Invalid input |
-| `UNAUTHORIZED` | 401 | Invalid or missing token |
-| `FORBIDDEN` | 403 | Email not verified |
-| `NOT_FOUND` | 404 | Resource not found |
-| `CONFLICT` | 409 | Resource already exists |
-| `INTERNAL_ERROR` | 500 | Server error |
+| Code               | Status | Description              |
+| ------------------ | ------ | ------------------------ |
+| `VALIDATION_ERROR` | 400    | Invalid input            |
+| `UNAUTHORIZED`     | 401    | Invalid or missing token |
+| `FORBIDDEN`        | 403    | Email not verified       |
+| `NOT_FOUND`        | 404    | Resource not found       |
+| `CONFLICT`         | 409    | Resource already exists  |
+| `INTERNAL_ERROR`   | 500    | Server error             |
 
 ---
 
 ## Tenant
 
 ### Register Tenant
+
 ```
 POST /tenants
 ```
 
 **Headers:**
+
 ```
 X-Admin-Secret: your_admin_secret
 ```
 
 **Request:**
+
 ```json
 {
   "name": "MyApp",
@@ -69,6 +76,7 @@ X-Admin-Secret: your_admin_secret
 ```
 
 **Response (201):**
+
 ```json
 {
   "success": true,
@@ -89,11 +97,13 @@ X-Admin-Secret: your_admin_secret
 ## Auth
 
 ### Register
+
 ```
 POST /auth/register
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -103,6 +113,7 @@ POST /auth/register
 ```
 
 **Response (201):**
+
 ```json
 {
   "success": true,
@@ -121,11 +132,13 @@ POST /auth/register
 ---
 
 ### Login
+
 ```
 POST /auth/login
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -134,6 +147,7 @@ POST /auth/login
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -153,6 +167,7 @@ POST /auth/login
 ---
 
 ### Logout
+
 ```
 POST /auth/logout
 ```
@@ -160,6 +175,7 @@ POST /auth/logout
 > Requires `accessToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -175,6 +191,7 @@ POST /auth/logout
 ---
 
 ### Refresh Tokens
+
 ```
 POST /auth/refresh
 ```
@@ -182,6 +199,7 @@ POST /auth/refresh
 > Requires `refreshToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -197,11 +215,13 @@ POST /auth/refresh
 ---
 
 ### Forgot Password
+
 ```
 POST /auth/forgot-password
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -209,6 +229,7 @@ POST /auth/forgot-password
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -222,11 +243,13 @@ POST /auth/forgot-password
 ---
 
 ### Reset Password
+
 ```
 POST /auth/reset-password
 ```
 
 **Request:**
+
 ```json
 {
   "token": "reset_token_from_email",
@@ -236,6 +259,7 @@ POST /auth/reset-password
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -249,6 +273,7 @@ POST /auth/reset-password
 ---
 
 ### Send Verification Email
+
 ```
 POST /auth/send-verification
 ```
@@ -256,6 +281,7 @@ POST /auth/send-verification
 > Requires `accessToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -269,11 +295,13 @@ POST /auth/send-verification
 ---
 
 ### Verify Email
+
 ```
 POST /auth/verify-email
 ```
 
 **Request:**
+
 ```json
 {
   "token": "verification_token_from_email"
@@ -281,6 +309,7 @@ POST /auth/verify-email
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -294,6 +323,7 @@ POST /auth/verify-email
 ---
 
 ### Resend Verification Email
+
 ```
 POST /auth/resend-verification
 ```
@@ -301,6 +331,7 @@ POST /auth/resend-verification
 > Requires `accessToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -316,12 +347,14 @@ POST /auth/resend-verification
 ## OAuth
 
 ### Get OAuth URL
+
 ```
 GET /auth/oauth/url?provider=google
 GET /auth/oauth/url?provider=github
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -335,6 +368,7 @@ GET /auth/oauth/url?provider=github
 ---
 
 ### Google Callback
+
 ```
 GET /auth/google/callback
 ```
@@ -344,6 +378,7 @@ GET /auth/google/callback
 ---
 
 ### GitHub Callback
+
 ```
 GET /auth/github/callback
 ```
@@ -355,6 +390,7 @@ GET /auth/github/callback
 ## Two-Factor Authentication (2FA)
 
 ### Setup 2FA
+
 ```
 POST /users/2fa/setup
 ```
@@ -362,6 +398,7 @@ POST /users/2fa/setup
 > Requires `accessToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -376,6 +413,7 @@ POST /users/2fa/setup
 ---
 
 ### Verify & Enable 2FA
+
 ```
 POST /users/2fa/verify
 ```
@@ -383,6 +421,7 @@ POST /users/2fa/verify
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "code": "123456"
@@ -390,6 +429,7 @@ POST /users/2fa/verify
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -404,6 +444,7 @@ POST /users/2fa/verify
 ---
 
 ### Disable 2FA
+
 ```
 POST /users/2fa/disable
 ```
@@ -411,6 +452,7 @@ POST /users/2fa/disable
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "code": "123456"
@@ -418,6 +460,7 @@ POST /users/2fa/disable
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -431,11 +474,13 @@ POST /users/2fa/disable
 ---
 
 ### Validate 2FA (Login)
+
 ```
 POST /auth/2fa/validate
 ```
 
 **Request:**
+
 ```json
 {
   "userId": "uuid",
@@ -444,6 +489,7 @@ POST /auth/2fa/validate
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -461,6 +507,7 @@ POST /auth/2fa/validate
 ## Users
 
 ### Get Profile
+
 ```
 GET /users/profile
 ```
@@ -468,6 +515,7 @@ GET /users/profile
 > Requires `accessToken` cookie.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -489,6 +537,7 @@ GET /users/profile
 ---
 
 ### Update Profile
+
 ```
 PUT /users/profile
 ```
@@ -496,6 +545,7 @@ PUT /users/profile
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "first_name": "John",
@@ -505,6 +555,7 @@ PUT /users/profile
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -522,6 +573,7 @@ PUT /users/profile
 ---
 
 ### Change Email
+
 ```
 PUT /users/change-email
 ```
@@ -529,6 +581,7 @@ PUT /users/change-email
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "newEmail": "newemail@example.com",
@@ -537,6 +590,7 @@ PUT /users/change-email
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -549,7 +603,28 @@ PUT /users/change-email
 
 ---
 
+### Verify Email Change
+
+```
+GET /users/verify-email-change?token=<token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "message": "Email changed successfully. Please log in again."
+  }
+}
+```
+
+---
+
 ### Change Password
+
 ```
 PUT /users/change-password
 ```
@@ -557,6 +632,7 @@ PUT /users/change-password
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "currentPassword": "OldPassword123",
@@ -566,6 +642,7 @@ PUT /users/change-password
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -579,6 +656,7 @@ PUT /users/change-password
 ---
 
 ### Delete Account
+
 ```
 DELETE /users/account
 ```
@@ -586,6 +664,7 @@ DELETE /users/account
 > Requires `accessToken` cookie.
 
 **Request:**
+
 ```json
 {
   "password": "Password123"
@@ -593,6 +672,7 @@ DELETE /users/account
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -606,11 +686,13 @@ DELETE /users/account
 ---
 
 ### Restore Account
+
 ```
 POST /users/account/restore
 ```
 
 **Request:**
+
 ```json
 {
   "token": "restore_token_from_email"
@@ -618,6 +700,7 @@ POST /users/account/restore
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,

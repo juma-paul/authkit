@@ -15,6 +15,7 @@ import {
 } from "../validators/user.validators";
 import { changePasswordSchema } from "../validators/auth.validators";
 import { generateSecureToken } from "../utils/tokens";
+import { sendEmailChangeVerificationEmail } from "../services/email.service";
 
 // Get profile controller
 export const getProfile = async (
@@ -173,7 +174,7 @@ export const changeEmail = async (
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) throw new UnauthorizedError("Invalid password");
 
-    // Check new email not already taken in this tenant
+    // Check new email not already taken
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1 AND tenant_id = $2 AND id != $3",
       [newEmail, req.tenantId, userId],
@@ -181,25 +182,76 @@ export const changeEmail = async (
     if (existingUser.rows.length > 0)
       throw new ConflictError("Email already in use");
 
-    // Update email + mark unverified
+    // Delete any existing pending email change tokens
+    await pool.query("DELETE FROM email_change_tokens WHERE user_id = $1", [
+      userId,
+    ]);
+
+    // Store pending email change token
+    const token = generateSecureToken();
     await pool.query(
-      `UPDATE users SET email = $1, email_verified = false WHERE id = $2 AND tenant_id = $3`,
-      [newEmail, userId, req.tenantId],
+      `INSERT INTO email_change_tokens (user_id, new_email, token, expires_at)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '1 hour')`,
+      [userId, newEmail, token],
     );
 
-    // Revoke all refresh tokens
-    await pool.query(
-      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
-      [userId],
-    );
+    // Send verification email to new address
+    await sendEmailChangeVerificationEmail(newEmail, token);
 
     sendSuccess(res, {
-      message: "Email changed successfully. Please verify your new email.",
+      message: "Please verify your new email address. Check your inbox.",
     });
   } catch (error) {
     next(error);
   }
 };
+
+export const verifyEmailChange = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token } = req.query as { token: string };
+
+    // Find valid token
+    const result = await pool.query(
+      `SELECT * FROM email_change_tokens
+       WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`,
+      [token],
+    );
+    if (!result.rows[0])
+      throw new UnauthorizedError("Invalid or expired token");
+
+    const { user_id, new_email } = result.rows[0];
+
+    // Mark token as used
+    await pool.query(
+      "UPDATE email_change_tokens SET used_at = NOW() WHERE token = $1",
+      [token],
+    );
+
+    // Now update the email
+    await pool.query(
+      `UPDATE users SET email = $1, email_verified = true, updated_at = NOW()
+       WHERE id = $2`,
+      [new_email, user_id],
+    );
+
+    // Revoke all refresh tokens
+    await pool.query(
+      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      [user_id],
+    );
+
+    sendSuccess(res, {
+      message: "Email changed successfully. Please log in again.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 // Delete account controller
 export const deleteAccount = async (

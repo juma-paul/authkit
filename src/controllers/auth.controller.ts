@@ -356,8 +356,44 @@ export const resendVerification = async (
   res: Response,
   next: NextFunction,
 ) => {
-  return sendVerification(req, res, next);
+  try {
+    const { email } = req.body;
+    if (!email) throw new ValidationError("Email is required");
+
+    // Find unverified user
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND tenant_id = $2",
+      [email, req.tenantId],
+    );
+
+    // Always return 200 to prevent enumeration
+    if (!result.rows[0] || result.rows[0].email_verified) {
+      return sendSuccess(res, { message: "Verification email sent" });
+    }
+
+    const user = result.rows[0];
+
+    // Delete existing tokens
+    await pool.query(
+      "DELETE FROM email_verification_tokens WHERE user_id = $1",
+      [user.id],
+    );
+
+    // Generate + save token
+    const token = generateSecureToken();
+    await pool.query(
+      `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+      [user.id, token],
+    );
+
+    await sendVerificationEmail(email, token);
+    sendSuccess(res, { message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
 };
+
 
 // Forgot password controller
 export const forgotPassword = async (

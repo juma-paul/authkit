@@ -61,3 +61,24 @@ export const sendEmailChangeNotification = async (
     `,
   });
 };
+
+export const sendEmailChangeVerificationEmail = async (
+  newEmail: string,
+  token: string,
+): Promise<void> => {
+  const verificationUrl = `${config.appUrl}/verify-email-change?token=${token}`;
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: newEmail,
+    subject: `Verify your new ${APP_NAME} email`,
+    html: `
+      <h2>Confirm your new email</h2>
+      <p>Click the link below to confirm your new email address:</p>
+      <a href="${verificationUrl}">Verify New Email</a>
+      <p>This link expires in 1 hour.</p>
+      <p>If you didn't request this, ignore this email.</p>
+    `,
+  });
+};
+

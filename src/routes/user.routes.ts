@@ -7,6 +7,7 @@ import {
   getProfile,
   restoreAccount,
   updateProfile,
+  verifyEmailChange,
 } from "../controllers/user.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import {
@@ -21,6 +22,8 @@ router.get("/profile", authenticate, getProfile);
 router.put("/profile", authenticate, updateProfile);
 router.put("/change-password", authenticate, changePassword);
 router.put("/change-email", authenticate, changeEmail);
+router.get("/verify-email-change", verifyEmailChange);
+
 
 // 2FA
 router.post("/2fa/setup", authenticate, setup2FA);
