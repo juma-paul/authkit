@@ -15,7 +15,18 @@ import {
 } from "../validators/user.validators";
 import { changePasswordSchema } from "../validators/auth.validators";
 import { generateSecureToken } from "../utils/tokens";
-import { sendEmailChangeVerificationEmail } from "../services/email.service";
+import {
+  sendAccountDeletionEmail,
+  sendEmailChangeVerificationEmail,
+} from "../services/email.service";
+import { config } from "../config/env";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: config.cloudinaryCloudName,
+  api_key: config.cloudinaryApiKey,
+  api_secret: config.cloudinaryApiSecret,
+});
 
 // Get profile controller
 export const getProfile = async (
@@ -309,6 +320,8 @@ export const deleteAccount = async (
       [userId],
     );
 
+    await sendAccountDeletionEmail(user.email, restoreToken);
+
     sendSuccess(res, {
       message: "Account deleted. You have 30 days to restore it.",
     });
@@ -349,6 +362,29 @@ export const restoreAccount = async (
     );
 
     sendSuccess(res, { message: "Account restored successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Cloudinary image upload controller
+export const signCloudinaryUpload = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    const { paramsToSign } = req.body;
+
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      config.cloudinaryApiSecret,
+    );
+
+    res.status(200).json({ signature });
   } catch (error) {
     next(error);
   }

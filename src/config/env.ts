@@ -21,6 +21,9 @@ const required = [
   "GITHUB_CLIENT_SECRET",
   "GITHUB_CALLBACK_URL",
   "ADMIN_SECRET",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
 ];
 
 required.forEach((key) => {
@@ -47,4 +50,7 @@ export const config = {
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET!,
   githubCallbackUrl: process.env.GITHUB_CALLBACK_URL!,
   adminSecret: process.env.ADMIN_SECRET!,
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME!,
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY!,
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET!,
 };

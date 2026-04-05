@@ -4,6 +4,7 @@ import {
   changeEmail,
   changePassword,
   deleteAccount,
+  signCloudinaryUpload,
   getProfile,
   restoreAccount,
   updateProfile,
@@ -24,6 +25,8 @@ router.put("/change-password", authenticate, changePassword);
 router.put("/change-email", authenticate, changeEmail);
 router.get("/verify-email-change", verifyEmailChange);
 
+// Upload image
+router.post("/cloudinary-sign", authenticate, signCloudinaryUpload);
 
 // 2FA
 router.post("/2fa/setup", authenticate, setup2FA);
