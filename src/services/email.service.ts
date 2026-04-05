@@ -82,3 +82,23 @@ export const sendEmailChangeVerificationEmail = async (
   });
 };
 
+export const sendAccountDeletionEmail = async (
+  email: string,
+  token: string,
+): Promise<void> => {
+  const restoreUrl = `${config.appUrl}/restore-account?token=${token}`;
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Your ${APP_NAME} account has been deleted`,
+    html: `
+      <h2>Account Deleted</h2>
+      <p>Your account has been deleted. You have 30 days to restore it.</p>
+      <a href="${restoreUrl}">Restore My Account</a>
+      <p>If you didn't request this, please restore your account immediately.</p>
+    `,
+  });
+};
+
+
