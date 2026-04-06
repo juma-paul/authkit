@@ -1,0 +1,9 @@
+node_modules/
+src/
+tests/
+.env*
+docker-compose*.yml
+*.log
+.git/
+README.md
+API_DOCS.md
