@@ -1,5 +1,5 @@
 import { pool } from "../config/database";
-import { createTestTenant } from "./helpers/testHelpers";
+import { createTestTenant } from "./factories/testDataFactory";
 
 beforeAll(async () => {
   await createTestTenant();

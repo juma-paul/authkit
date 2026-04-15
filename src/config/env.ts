@@ -14,6 +14,7 @@ const required = [
   "JWT_REFRESH_EXPIRES_IN",
   "RESEND_API_KEY",
   "APP_URL",
+  "API_URL",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "GOOGLE_CALLBACK_URL",
@@ -35,6 +36,7 @@ required.forEach((key) => {
 export const config = {
   port: process.env.PORT || "3001",
   nodeEnv: process.env.NODE_ENV || "development",
+  rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== "false", 
   databaseUrl: process.env.DATABASE_URL!,
   jwtSecret: process.env.JWT_SECRET!,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN! as jwt.SignOptions["expiresIn"],
@@ -43,6 +45,7 @@ export const config = {
     .JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   resendApiKey: process.env.RESEND_API_KEY!,
   appUrl: process.env.APP_URL!,
+  apiUrl: process.env.API_URL!,
   googleClientId: process.env.GOOGLE_CLIENT_ID!,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL!,

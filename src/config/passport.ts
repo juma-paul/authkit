@@ -4,7 +4,11 @@ import { Strategy as GitHubStrategy } from "passport-github2";
 
 import { config } from "./env";
 import { pool } from "./database";
+import { ConflictError } from "../errors/AppError";
 
+/**
+ * Production-safe OAuth user handler
+ */
 const findOrCreateUser = async (
   tenantId: string,
   email: string,
@@ -13,35 +17,85 @@ const findOrCreateUser = async (
   name?: string,
   avatarUrl?: string,
 ) => {
-  // Check if user exists
-  let result = await pool.query(
-    "SELECT * FROM users WHERE email = $1 AND tenant_id = $2",
+  // Check existing user
+  const existingResult = await pool.query(
+    `SELECT * 
+     FROM users 
+     WHERE email = $1 
+     AND tenant_id = $2`,
     [email, tenantId],
   );
 
-  if (result.rows.length === 0) {
-    // Create new user
-    result = await pool.query(
-      `INSERT INTO users 
-       (tenant_id, email, email_verified, terms_accepted, terms_accepted_at, first_name, avatar_url)
-       VALUES ($1, $2, true, true, NOW(), $3, $4)
-       RETURNING *`,
-      [tenantId, email, name, avatarUrl],
+  if (existingResult.rows.length > 0) {
+    const existing = existingResult.rows[0];
+
+    /**
+     * LOCAL account exists
+     */
+    if (existing.auth_provider === "local") {
+      throw new ConflictError(
+        "An account with this email already exists using password login. Please sign in using email and password.",
+      );
+    }
+
+    /**
+     * Different OAuth provider exists
+     */
+    if (existing.auth_provider !== provider) {
+      throw new ConflictError(
+        `This email is already connected to ${existing.auth_provider}. Please sign in using ${existing.auth_provider}.`,
+      );
+    }
+
+    /**
+     * SAME provider — LOGIN EXISTING USER
+     */
+    await pool.query(
+      `INSERT INTO oauth_connections
+       (user_id, provider, provider_user_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (provider, provider_user_id) DO NOTHING`,
+      [existing.id, provider, providerId],
     );
+
+    return existing;
   }
+
+  /**
+   * CREATE NEW USER
+   */
+  const result = await pool.query(
+    `INSERT INTO users 
+     (
+       tenant_id,
+       email,
+       email_verified,
+       terms_accepted,
+       terms_accepted_at,
+       first_name,
+       avatar_url,
+       auth_provider
+     )
+     VALUES ($1,$2,true,true,NOW(),$3,$4,$5)
+     RETURNING *`,
+    [tenantId, email, name, avatarUrl, provider],
+  );
 
   const user = result.rows[0];
 
-  // Save OAuth connection
   await pool.query(
-    `INSERT INTO oauth_connections (user_id, provider, provider_user_id)
-     VALUES ($1, $2, $3)
+    `INSERT INTO oauth_connections
+     (user_id, provider, provider_user_id)
+     VALUES ($1,$2,$3)
      ON CONFLICT (provider, provider_user_id) DO NOTHING`,
     [user.id, provider, providerId],
   );
 
   return user;
 };
+
+
+// GOOGLE
 
 passport.use(
   new GoogleStrategy(
@@ -54,22 +108,33 @@ passport.use(
     async (req, accessToken, refreshToken, profile, done) => {
       try {
         const tenantId = (req as any).tenantId;
-        const email = profile.emails?.[0].value!;
+
+        const email = profile.emails?.[0]?.value;
+
+        if (!email) {
+          return done(new Error("No email provided by Google"));
+        }
+
         const user = await findOrCreateUser(
           tenantId,
           email,
           "google",
           profile.id,
           profile.displayName,
-          profile.photos?.[0].value,
+          profile.photos?.[0]?.value,
         );
+
         done(null, user);
       } catch (error) {
-        done(error);
+        done(error as Error);
       }
     },
   ),
 );
+
+/* =========================
+   GITHUB
+========================= */
 
 passport.use(
   new GitHubStrategy(
@@ -78,6 +143,7 @@ passport.use(
       clientSecret: config.githubClientSecret,
       callbackURL: config.githubCallbackUrl,
       passReqToCallback: true,
+      scope: ["user:email"],
     },
     async (
       req: any,
@@ -89,25 +155,43 @@ passport.use(
       try {
         const tenantId = req.tenantId;
 
-        // Fetch emails from GitHub API
+        /**
+         * Fetch GitHub emails
+         */
         const response = await fetch("https://api.github.com/user/emails", {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+          },
         });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch GitHub emails");
+        }
+
         const emails = (await response.json()) as Array<{
           email: string;
           primary: boolean;
+          verified: boolean;
         }>;
-        const email = emails.find((e) => e.primary)?.email;
 
-        if (!email) return done(new Error("No email provided by GitHub"));
+        const primaryEmail =
+          emails.find((e) => e.primary && e.verified) ||
+          emails.find((e) => e.primary);
+
+        if (!primaryEmail?.email) {
+          return done(new Error("No verified email available from GitHub"));
+        }
+
         const user = await findOrCreateUser(
           tenantId,
-          email,
+          primaryEmail.email,
           "github",
           profile.id,
           profile.displayName,
-          profile.photos?.[0].value,
+          profile.photos?.[0]?.value,
         );
+
         done(null, user);
       } catch (error) {
         done(error);

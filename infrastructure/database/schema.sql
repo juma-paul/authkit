@@ -39,6 +39,7 @@ CREATE TABLE users (
     -- Identity fields
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255),
+    auth_provider TEXT DEFAULT 'local',
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     avatar_url TEXT,

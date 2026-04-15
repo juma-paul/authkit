@@ -5,10 +5,12 @@ import { pool } from "../config/database";
 import { sendSuccess } from "../utils/response";
 import {
   ConflictError,
+  InvalidCredentialsError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
 } from "../errors/AppError";
+import { ERROR_MESSAGES } from "../constants/errorMessages";
 import {
   changeEmailSchema,
   updateProfileSchema,
@@ -21,6 +23,7 @@ import {
 } from "../services/email.service";
 import { config } from "../config/env";
 import { v2 as cloudinary } from "cloudinary";
+import { ensureLocalAccount } from "../utils/ensureLocalAccount";
 
 cloudinary.config({
   cloud_name: config.cloudinaryCloudName,
@@ -58,10 +61,10 @@ export const getProfile = async (
     );
     // Return user without sensitive fields
     const {
-      password_hash,
-      deleted_at,
-      restore_token,
-      restore_token_expires_at,
+      password_hash: _password_hash,
+      deleted_at: _deleted_at,
+      restore_token: _restore_token,
+      restore_token_expires_at: _restore_token_expires_at,
       ...safeUser
     } = user.rows[0];
 
@@ -107,10 +110,10 @@ export const updateProfile = async (
     }
 
     const {
-      password_hash,
-      deleted_at,
-      restore_token,
-      restore_token_expires_at,
+      password_hash: _password_hash,
+      deleted_at: _deleted_at,
+      restore_token: _restore_token,
+      restore_token_expires_at: _restore_token_expires_at,
       ...safeUser
     } = result.rows[0];
 
@@ -134,6 +137,9 @@ export const changePassword = async (
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("Not authenticated");
 
+    // Block OAuth users
+    await ensureLocalAccount(userId);
+
     // Find user
     const result = await pool.query(
       "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
@@ -149,7 +155,15 @@ export const changePassword = async (
       user.password_hash,
     );
     if (!passwordMatch)
-      throw new UnauthorizedError("Current password is incorrect");
+      throw new InvalidCredentialsError("Current password is incorrect");
+
+    // Prevent same password reuse
+    const samePassword = await bcrypt.compare(newPassword, user.password_hash);
+
+    if (samePassword)
+      throw new ValidationError(
+        "New password must be different from current password",
+      );
 
     // Hash new password
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
@@ -166,7 +180,7 @@ export const changePassword = async (
       [userId],
     );
 
-    sendSuccess(res, { message: "Password changed successfully" });
+    sendSuccess(res, { message: ERROR_MESSAGES.PASSWORD_CHANGED });
   } catch (error) {
     next(error);
   }
@@ -182,42 +196,60 @@ export const changeEmail = async (
     const { newEmail, password } = changeEmailSchema.parse(req.body);
 
     const userId = req.user?.userId;
+
     if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Block OAuth users
+    await ensureLocalAccount(userId);
 
     // Find user
     const result = await pool.query(
-      "SELECT * FROM users WHERE id = $1 AND tenant_id = $2",
+      `SELECT * FROM users
+       WHERE id = $1
+       AND tenant_id = $2`,
       [userId, req.tenantId],
     );
+
     if (!result.rows[0]) throw new NotFoundError("User not found");
+
     const user = result.rows[0];
 
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
-    if (!passwordMatch) throw new UnauthorizedError("Invalid password");
+
+    if (!passwordMatch) throw new InvalidCredentialsError("Invalid password");
 
     // Check new email not already taken
     const existingUser = await pool.query(
-      "SELECT id FROM users WHERE email = $1 AND tenant_id = $2 AND id != $3",
+      `SELECT id FROM users
+       WHERE email = $1
+       AND tenant_id = $2
+       AND id != $3`,
       [newEmail, req.tenantId, userId],
     );
+
     if (existingUser.rows.length > 0)
       throw new ConflictError("Email already in use");
 
-    // Delete any existing pending email change tokens
-    await pool.query("DELETE FROM email_change_tokens WHERE user_id = $1", [
-      userId,
-    ]);
-
-    // Store pending email change token
-    const token = generateSecureToken();
+    // Delete existing pending tokens
     await pool.query(
-      `INSERT INTO email_change_tokens (user_id, new_email, token, expires_at)
-       VALUES ($1, $2, $3, NOW() + INTERVAL '1 hour')`,
+      `DELETE FROM email_change_tokens
+       WHERE user_id = $1`,
+      [userId],
+    );
+
+    // Store new token
+    const token = generateSecureToken();
+
+    await pool.query(
+      `INSERT INTO email_change_tokens
+       (user_id, new_email, token, expires_at)
+       VALUES ($1, $2, $3,
+       NOW() + INTERVAL '1 hour')`,
       [userId, newEmail, token],
     );
 
-    // Send verification email to new address
+    // Send verification email
     await sendEmailChangeVerificationEmail(newEmail, token);
 
     sendSuccess(res, {
@@ -294,11 +326,19 @@ export const deleteAccount = async (
     const user = result.rows[0];
 
     // Check not already deleted
-    if (user.deleted_at) throw new ConflictError("Account already deleted");
+    if (user.deleted_at) throw new ConflictError(ERROR_MESSAGES.ACCOUNT_ALREADY_DELETED);
 
     // Verify password
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
-    if (!passwordMatch) throw new UnauthorizedError("Invalid password");
+    if (user.auth_provider === "local") {
+      if (!password) {
+        throw new InvalidCredentialsError("Password is required");
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password_hash);
+      if (!passwordMatch) {
+        throw new InvalidCredentialsError("Invalid password");
+      }
+    }
 
     // Generate restore token
     const restoreToken = generateSecureToken();
@@ -361,7 +401,7 @@ export const restoreAccount = async (
       [result.rows[0].id],
     );
 
-    sendSuccess(res, { message: "Account restored successfully" });
+    sendSuccess(res, { message: ERROR_MESSAGES.ACCOUNT_RESTORED });
   } catch (error) {
     next(error);
   }

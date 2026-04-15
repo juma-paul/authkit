@@ -1,10 +1,12 @@
 node_modules/
-dist.
+dist/
+
+# Env
 .env
 .env.development
 .env.test
 .env.production
-.env.local
+env.production.yaml
 .DS_Store
 
 # Tests

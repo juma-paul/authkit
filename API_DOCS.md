@@ -41,14 +41,46 @@ X-API-Key: your_tenant_api_key
 
 ## Error Codes
 
-| Code               | Status | Description              |
-| ------------------ | ------ | ------------------------ |
-| `VALIDATION_ERROR` | 400    | Invalid input            |
-| `UNAUTHORIZED`     | 401    | Invalid or missing token |
-| `FORBIDDEN`        | 403    | Email not verified       |
-| `NOT_FOUND`        | 404    | Resource not found       |
-| `CONFLICT`         | 409    | Resource already exists  |
-| `INTERNAL_ERROR`   | 500    | Server error             |
+| Code               | Status | Description                                    |
+| ------------------ | ------ | ---------------------------------------------- |
+| `VALIDATION_ERROR` | 400    | Invalid input                                  |
+| `INVALID_PASSWORD` | 400    | Incorrect password (for password verification) |
+| `TOKEN_EXPIRED`    | 401    | JWT access token has expired                   |
+| `UNAUTHORIZED`     | 401    | Invalid or missing token                       |
+| `ACCOUNT_DELETED`  | 403    | Account has been soft-deleted                  |
+| `FORBIDDEN`        | 403    | Email not verified or access denied            |
+| `NOT_FOUND`        | 404    | Resource not found                             |
+| `CONFLICT`         | 409    | Resource already exists                        |
+| `RATE_LIMITED`     | 429    | Too many requests                              |
+| `INTERNAL_ERROR`   | 500    | Server error                                   |
+
+> **Frontend Integration Note**: The `TOKEN_EXPIRED` code triggers automatic token refresh via axios interceptor. `ACCOUNT_DELETED` and `UNAUTHORIZED` redirect to login.
+
+---
+
+## Health Check
+
+### Get Service Health
+
+```
+GET /health
+```
+
+> Does **not** require `X-API-Key` header.
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "status": "healthy",
+    "service": "user-service",
+    "environment": "production"
+  }
+}
+```
 
 ---
 
@@ -127,7 +159,7 @@ POST /auth/register
 }
 ```
 
-> Sets `accessToken` and `refreshToken` as httpOnly cookies.
+> A verification email is sent. User must verify email before logging in.
 
 ---
 
@@ -567,6 +599,56 @@ PUT /users/profile
     }
   }
 }
+```
+
+---
+
+### Sign Cloudinary Upload
+
+```
+POST /users/cloudinary-sign
+```
+
+> Requires `accessToken` cookie.
+
+Generates a signature for direct browser-to-Cloudinary uploads. Used for secure avatar uploads without exposing API secret.
+
+**Request:**
+
+```json
+{
+  "paramsToSign": {
+    "timestamp": 1234567890,
+    "folder": "avatars",
+    "upload_preset": "your_preset"
+  }
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "signature": "a1b2c3d4e5f6..."
+}
+```
+
+**Frontend Usage:**
+
+```typescript
+// 1. Get signature from backend
+const { signature } = await api.post('/users/cloudinary-sign', { paramsToSign });
+
+// 2. Upload directly to Cloudinary
+const formData = new FormData();
+formData.append('file', file);
+formData.append('signature', signature);
+formData.append('api_key', CLOUDINARY_API_KEY);
+// ... other params
+await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+  method: 'POST',
+  body: formData
+});
 ```
 
 ---

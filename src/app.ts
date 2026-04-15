@@ -29,21 +29,23 @@ app.use(
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// RATE LIMITING
-const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  message: "Too many requests, please try again later",
-});
+// RATE LIMITING 
+if (config.rateLimitEnabled) {
+  const globalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    message: "Too many requests, please try again later",
+  });
 
-const authLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: "Too many auth attempts, please try again later",
-});
+  const authLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: "Too many auth attempts, please try again later",
+  });
 
-app.use(globalLimiter);
-app.use("/api/v1/auth", authLimiter);
+  app.use(globalLimiter);
+  app.use("/api/v1/auth", authLimiter);
+}
 
 // HEALTH CHECK
 app.get("/health", (req, res) => {
@@ -67,7 +69,7 @@ if (config.nodeEnv === "test") {
   });
 }
 
-// TENANT MIDDLEWARE (skip for OAuth routes)
+// TENANT MIDDLEWARE
 app.use((req, res, next) => {
   if (
     req.path.includes("/auth/google") ||

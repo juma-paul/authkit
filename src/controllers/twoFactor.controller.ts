@@ -9,8 +9,11 @@ import {
   UnauthorizedError,
   NotFoundError,
   ValidationError,
+  InvalidCredentialsError,
 } from "../errors/AppError";
+import { ERROR_MESSAGES } from "../constants/errorMessages";
 import { setTokenCookies } from "../utils/cookies";
+import { ensureLocalAccount } from "../utils/ensureLocalAccount";
 
 // Setup 2FA
 export const setup2FA = async (
@@ -20,25 +23,34 @@ export const setup2FA = async (
 ) => {
   try {
     const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedError("Not uthenticated");
+
+    if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Block OAuth users
+    await ensureLocalAccount(userId);
 
     // Generate secret
     const secret = speakeasy.generateSecret({
       name: `BudgetApp (${req.user?.email})`,
     });
 
-    // Save secret to DB
+    // Save secret
     await pool.query(
-      `INSERT INTO two_factor_auth (user_id, secret, enabled)
-        VALUES ($1, $2, false)
-        ON CONFLICT (user_id) DO UPDATE SET secret = $2, enabled = false`,
+      `INSERT INTO two_factor_auth
+       (user_id, secret, enabled)
+       VALUES ($1, $2, false)
+       ON CONFLICT (user_id)
+       DO UPDATE SET secret = $2, enabled = false`,
       [userId, secret.base32],
     );
 
-    // Generate QR code
+    // Generate QR
     const qrCode = await QRCode.toDataURL(secret.otpauth_url!);
 
-    sendSuccess(res, { qrCode, secret: secret.base32 });
+    sendSuccess(res, {
+      qrCode,
+      secret: secret.base32,
+    });
   } catch (error) {
     next(error);
   }
@@ -53,6 +65,9 @@ export const verify2FA = async (
   try {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("Not authenticated");
+
+    // Block OAuth users
+    await ensureLocalAccount(userId);
 
     const { code } = req.body;
     if (!code) throw new ValidationError("Code is required");
@@ -72,7 +87,8 @@ export const verify2FA = async (
       window: 1,
     });
 
-    if (!isValid) throw new UnauthorizedError("Invalid 2FA code");
+    if (!isValid)
+      throw new InvalidCredentialsError(ERROR_MESSAGES.INVALID_2FA_CODE);
 
     // Enable 2FA
     await pool.query(
@@ -107,6 +123,9 @@ export const disable2FA = async (
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("Not authenticated");
 
+    // Block OAuth users
+    await ensureLocalAccount(userId);
+
     const { code } = req.body;
     if (!code) throw new ValidationError("Code is required");
 
@@ -124,7 +143,9 @@ export const disable2FA = async (
       token: code,
       window: 1,
     });
-    if (!isValid) throw new UnauthorizedError("Invalid 2FA code");
+
+    if (!isValid)
+      throw new InvalidCredentialsError(ERROR_MESSAGES.INVALID_2FA_CODE);
 
     // Disable
     await pool.query(
@@ -161,7 +182,8 @@ export const validate2FA = async (
       token: code,
       window: 1,
     });
-    if (!isValid) throw new UnauthorizedError("Invalid 2FA code");
+
+    if (!isValid) throw new InvalidCredentialsError("Invalid 2FA code");
 
     // Get user and generate tokens
     const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [
@@ -170,7 +192,11 @@ export const validate2FA = async (
     const user = userResult.rows[0];
 
     const { generateTokens } = await import("../utils/tokens");
-    const { accessToken, refreshToken } = generateTokens(user.id, user.email);
+    const { accessToken, refreshToken } = generateTokens(
+      user.id,
+      user.email,
+      user.auth_provider,
+    );
 
     await pool.query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at)

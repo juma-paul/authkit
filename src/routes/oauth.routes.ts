@@ -3,7 +3,8 @@ import passport from "../config/passport";
 import { oauthCallback } from "../controllers/oauth.controller";
 import { getOAuthUrl } from "../controllers/auth.controller";
 import { verifyOAuthState } from "../utils/tokens";
-import { UnauthorizedError } from "../errors/AppError";
+import { ConflictError } from "../errors/AppError";
+import { config } from "../config/env";
 
 const router = Router();
 
@@ -19,23 +20,41 @@ router.get("/google", (req, res, next) => {
   })(req, res, next);
 });
 
-router.get(
-  "/google/callback",
-  (req, res, next) => {
-    try {
-      const { tenantId } = verifyOAuthState(req.query.state as string);
-      (req as any).tenantId = tenantId;
-      next();
-    } catch {
-      next(new UnauthorizedError("Invalid state token"));
-    }
-  },
-  passport.authenticate("google", {
-    failureRedirect: "/login",
-    session: false,
-  }),
-  oauthCallback,
-);
+router.get("/google/callback", (req, res, next) => {
+  try {
+    const { tenantId } = verifyOAuthState(req.query.state as string);
+    (req as any).tenantId = tenantId;
+  } catch {
+    return res.redirect(
+      `${config.appUrl}/auth/callback?error=auth_failed&message=${encodeURIComponent("Invalid state token")}`,
+    );
+  }
+
+  passport.authenticate(
+    "google",
+    { session: false },
+    (err: any, user: Express.User | false | null) => {
+      if (err) {
+        if (err instanceof ConflictError) {
+          return res.redirect(
+            `${config.appUrl}/auth/callback?error=conflict&message=${encodeURIComponent(err.message)}`,
+          );
+        }
+
+        return next(err);
+      }
+
+      if (!user) {
+        return res.redirect(
+          `${config.appUrl}/auth/callback?error=auth_failed&message=${encodeURIComponent("Google sign-in failed")}`,
+        );
+      }
+
+      (req as any).user = user;
+      return oauthCallback(req, res, next);
+    },
+  )(req, res, next);
+});
 
 // GitHub OAuth
 router.get("/github", (req, res, next) => {
@@ -54,14 +73,37 @@ router.get(
       (req as any).tenantId = tenantId;
       next();
     } catch {
-      next(new UnauthorizedError("Invalid state token"));
+      return res.redirect(
+        `${config.appUrl}/auth/callback?error=auth_failed&message=${encodeURIComponent("Invalid state token")}`,
+      );
     }
   },
-  passport.authenticate("github", {
-    failureRedirect: "/login",
-    session: false,
-  }),
-  oauthCallback,
+  (req, res, next) => {
+    passport.authenticate(
+      "github",
+      { session: false },
+      (err: any, user: Express.User | false | null) => {
+        if (err) {
+          if (err instanceof ConflictError) {
+            return res.redirect(
+              `${config.appUrl}/auth/callback?error=conflict&message=${encodeURIComponent(err.message)}`,
+            );
+          }
+
+          return next(err);
+        }
+
+        if (!user) {
+          return res.redirect(
+            `${config.appUrl}/auth/callback?error=auth_failed&message=${encodeURIComponent("GitHub sign-in failed")}`,
+          );
+        }
+
+        (req as any).user = user;
+        return oauthCallback(req, res, next);
+      },
+    )(req, res, next);
+  },
 );
 
 export default router;

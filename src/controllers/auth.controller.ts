@@ -11,6 +11,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../errors/AppError";
+import { ERROR_MESSAGES } from "../constants/errorMessages";
 import {
   registerSchema,
   loginSchema,
@@ -30,6 +31,7 @@ import {
 } from "../services/email.service";
 
 import { setTokenCookies, clearTokenCookies } from "../utils/cookies";
+import { ensureLocalAccount } from "../utils/ensureLocalAccount";
 
 // Signup controller
 export const register = async (
@@ -52,7 +54,7 @@ export const register = async (
     );
 
     if (existingUser.rows.length > 0) {
-      throw new ConflictError("Email already registered");
+      throw new ConflictError(ERROR_MESSAGES.EMAIL_ALREADY_REGISTERED);
     }
 
     // Hash password
@@ -85,13 +87,12 @@ export const register = async (
     await sendVerificationEmail(user.email, verificationToken);
     console.log("Email sent!");
 
-
     // Return response
     const {
-      password_hash,
-      deleted_at,
-      restore_token,
-      restore_token_expires_at,
+      password_hash: _password_hash,
+      deleted_at: _deleted_at,
+      restore_token: _restore_token,
+      restore_token_expires_at: _restore_token_expires_at,
       ...safeUser
     } = user;
 
@@ -118,7 +119,7 @@ export const login = async (
     );
 
     if (result.rows.length === 0) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     const user = result.rows[0];
@@ -134,12 +135,12 @@ export const login = async (
       user.password_hash,
     );
     if (!passwordMatch) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     // Check email verified
     if (!user.email_verified) {
-      throw new ForbiddenError("Please verify your email before logging in");
+      throw new ForbiddenError(ERROR_MESSAGES.EMAIL_NOT_VERIFIED);
     }
 
     // Check if 2FA enabled
@@ -152,7 +153,11 @@ export const login = async (
     }
 
     // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user.id, user.email);
+    const { accessToken, refreshToken } = generateTokens(
+      user.id,
+      user.email,
+      user.auth_provider,
+    );
 
     // Save refresh token
     await pool.query(
@@ -168,10 +173,10 @@ export const login = async (
 
     // Return response
     const {
-      password_hash,
-      deleted_at,
-      restore_token,
-      restore_token_expires_at,
+      password_hash: _password_hash,
+      deleted_at: _deleted_at,
+      restore_token: _restore_token,
+      restore_token_expires_at: _restore_token_expires_at,
       ...safeUser
     } = user;
 
@@ -229,8 +234,8 @@ export const refreshTokens = async (
     let decoded: any;
     try {
       decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
-    } catch (error) {
-      return next(new UnauthorizedError("Invalid or expired refresh token"));
+    } catch (_error) {
+      return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN));
     }
 
     // Check token exists in DB and not revoked
@@ -241,7 +246,7 @@ export const refreshTokens = async (
     );
 
     if (tokenRecord.rows.length === 0) {
-      throw new UnauthorizedError("Invalid or expired refresh token");
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN);
     }
 
     // Revoke old refresh token
@@ -254,6 +259,7 @@ export const refreshTokens = async (
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(
       decoded.userId,
       decoded.email,
+      decoded.auth_provider,
     );
 
     // Save new refresh token
@@ -286,7 +292,7 @@ export const sendVerification = async (
     );
     if (!result.rows[0]) throw new NotFoundError("User not found");
     if (result.rows[0].email_verified) {
-      return sendSuccess(res, { message: "Email already verified" });
+      return sendSuccess(res, { message: ERROR_MESSAGES.ALREADY_VERIFIED });
     }
 
     // Delete any existing unused tokens
@@ -306,7 +312,7 @@ export const sendVerification = async (
     // Send email
     await sendVerificationEmail(result.rows[0].email, token);
 
-    sendSuccess(res, { message: "Verification email sent" });
+    sendSuccess(res, { message: ERROR_MESSAGES.VERIFICATION_SENT });
   } catch (error) {
     next(error);
   }
@@ -329,7 +335,7 @@ export const verifyEmail = async (
       [token],
     );
     if (!result.rows[0])
-      throw new UnauthorizedError("Invalid or expired token");
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN);
 
     const { user_id } = result.rows[0];
 
@@ -368,7 +374,7 @@ export const resendVerification = async (
 
     // Always return 200 to prevent enumeration
     if (!result.rows[0] || result.rows[0].email_verified) {
-      return sendSuccess(res, { message: "Verification email sent" });
+      return sendSuccess(res, { message: ERROR_MESSAGES.VERIFICATION_SENT });
     }
 
     const user = result.rows[0];
@@ -388,12 +394,11 @@ export const resendVerification = async (
     );
 
     await sendVerificationEmail(email, token);
-    sendSuccess(res, { message: "Verification email sent" });
+    sendSuccess(res, { message: ERROR_MESSAGES.VERIFICATION_SENT });
   } catch (error) {
     next(error);
   }
 };
-
 
 // Forgot password controller
 export const forgotPassword = async (
@@ -453,19 +458,38 @@ export const resetPassword = async (
     const { token, newPassword } = resetPasswordSchema.parse(req.body);
 
     // Find valid token
-    const result = await pool.query(
+    const tokenResult = await pool.query(
       `SELECT * FROM password_reset_tokens
-       WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`,
+       WHERE token = $1
+       AND expires_at > NOW()
+       AND used_at IS NULL`,
       [token],
     );
-    if (!result.rows[0])
-      throw new UnauthorizedError("Invalid or expired token");
 
-    const { user_id } = result.rows[0];
+    if (!tokenResult.rows[0]) {
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN);
+    }
+
+    const { user_id } = tokenResult.rows[0];
+
+    // Block OAuth users
+    await ensureLocalAccount(user_id);
+
+    // Load user
+    const userResult = await pool.query(
+      `SELECT auth_provider
+       FROM users
+       WHERE id = $1`,
+      [user_id],
+    );
+
+    const _user = userResult.rows[0];
 
     // Mark token as used
     await pool.query(
-      "UPDATE password_reset_tokens SET used_at = NOW() WHERE token = $1",
+      `UPDATE password_reset_tokens
+       SET used_at = NOW()
+       WHERE token = $1`,
       [token],
     );
 
@@ -473,18 +497,25 @@ export const resetPassword = async (
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
     // Update password
-    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
-      passwordHash,
-      user_id,
-    ]);
-
-    // Revoke all refresh tokens
     await pool.query(
-      "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+      `UPDATE users
+       SET password_hash = $1
+       WHERE id = $2`,
+      [passwordHash, user_id],
+    );
+
+    // Revoke refresh tokens
+    await pool.query(
+      `UPDATE refresh_tokens
+       SET revoked_at = NOW()
+       WHERE user_id = $1
+       AND revoked_at IS NULL`,
       [user_id],
     );
 
-    sendSuccess(res, { message: "Password reset successfully" });
+    sendSuccess(res, {
+      message: ERROR_MESSAGES.PASSWORD_RESET_SUCCESS,
+    });
   } catch (error) {
     next(error);
   }
@@ -501,7 +532,7 @@ export const getOAuthUrl = async (
     if (!req.tenantId) throw new UnauthorizedError("No tenant identified");
 
     const state = generateOAuthState(req.tenantId);
-    const baseUrl = `${config.appUrl}/api/v1/auth`;
+    const baseUrl = `${config.apiUrl}/api/v1/auth`;
 
     const urls: Record<string, string> = {
       google: `${baseUrl}/google?state=${state}`,
