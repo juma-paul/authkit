@@ -21,7 +21,7 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://authkit-demo-six.vercel.app"],
     credentials: true,
   }),
 );
@@ -29,7 +29,7 @@ app.use(
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// RATE LIMITING 
+// RATE LIMITING
 if (config.rateLimitEnabled) {
   const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -39,7 +39,7 @@ if (config.rateLimitEnabled) {
 
   const authLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 10,
+    max: 20,
     message: "Too many auth attempts, please try again later",
   });
 

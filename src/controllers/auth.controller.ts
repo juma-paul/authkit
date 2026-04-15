@@ -83,9 +83,7 @@ export const register = async (
       [user.id, verificationToken],
     );
 
-    console.log("Sending verification email...");
     await sendVerificationEmail(user.email, verificationToken);
-    console.log("Email sent!");
 
     // Return response
     const {
