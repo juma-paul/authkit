@@ -1,4 +1,4 @@
-# Auth Service
+# AuthKit — Build Once, Auth Everywhere
 
 > Multi-tenant authentication microservice with OAuth, 2FA, and comprehensive account management
 
