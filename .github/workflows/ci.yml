@@ -91,6 +91,7 @@ jobs:
 
       - name: Build image
         run: |
+          npm ci
           npm run build
           docker buildx build --platform linux/amd64 \
             -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/auth-service/auth-service:${{ github.ref_name }} \
