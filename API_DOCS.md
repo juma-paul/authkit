@@ -76,7 +76,6 @@ GET /health
   "statusCode": 200,
   "data": {
     "status": "healthy",
-    "service": "user-service",
     "environment": "production"
   }
 }

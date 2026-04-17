@@ -1,19 +1,23 @@
-# AuthKit — Build Once, Auth Everywhere
+# AuthKit — Self-Hosted Identity Infrastructure
 
-> Multi-tenant authentication microservice with OAuth, 2FA, and comprehensive account management
+> Deploy once, authenticate every project. Multi-tenant identity API with OAuth, 2FA, and complete account management.
 
-![Tests](https://img.shields.io/badge/tests-98%20passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-89%25-yellowgreen)
+![CI](https://github.com/juma-paul/authkit/actions/workflows/ci.yml/badge.svg?branch=main)
+![Coverage](https://codecov.io/gh/juma-paul/authkit/branch/main/graph/badge.svg)
 ![Version](https://img.shields.io/badge/version-v1.0.0-blue)
 ![Node](https://img.shields.io/badge/node-v24%2B-green)
 ![TypeScript](https://img.shields.io/badge/typescript-5.9-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/github/license/juma-paul/authkit)
+
+[Live Demo](https://authkit-demo-six.vercel.app) | [API Docs](./API_DOCS.md) | [Features](#features) | [Quick Start](#quick-start)
+
+---
 
 ## About
 
-**Auth Service** is a standalone, multi-tenant authentication microservice built to be reused across multiple applications. Instead of rewriting authentication logic for every project, register your app as a tenant, receive an API key, and integrate production-ready auth instantly.
+**AuthKit** is a self-hosted, multi-tenant identity API designed to eliminate repetitive auth work across projects. Deploy it once, then connect any application as a tenant — each gets its own isolated user base, API key, and full-featured authentication system.
 
-> Built once. Used everywhere.
+**The idea:** Instead of rewriting authentication for every side project, I built AuthKit to be my personal Auth0,clerk/Firebase Auth — a single backend that powers all my apps.
 
 ## Tags
 
@@ -21,57 +25,62 @@
 
 ## Technologies
 
-| Category | Stack |
-|----------|-------|
-| **Runtime** | Node.js 24 |
-| **Framework** | Express 5.x |
-| **Language** | TypeScript (strict mode) |
-| **Database** | PostgreSQL 17 |
-| **Testing** | Jest + Supertest |
-| **Security** | Passport.js, JWT, bcrypt, Helmet |
-| **Email** | Resend |
-| **Image Upload** | Cloudinary |
-| **Containerization** | Docker |
-| **CI/CD** | GitHub Actions |
-| **Deployment** | Google Cloud Run |
+| Category             | Stack                            |
+| -------------------- | -------------------------------- |
+| **Runtime**          | Node.js 24                       |
+| **Framework**        | Express 5.x                      |
+| **Language**         | TypeScript (strict mode)         |
+| **Database**         | PostgreSQL 17                    |
+| **Testing**          | Jest + Supertest                 |
+| **Security**         | Passport.js, JWT, bcrypt, Helmet |
+| **Email**            | Resend                           |
+| **Image Upload**     | Cloudinary                       |
+| **Containerization** | Docker                           |
+| **CI/CD**            | GitHub Actions                   |
+| **Deployment**       | Google Cloud Run                 |
 
 ## Features
 
 ### Authentication
+
 - Email/password registration and login
 - Secure logout with token revocation
 - OAuth 2.0 (Google & GitHub)
 - JWT access tokens (15min) + refresh token rotation (7d)
 - httpOnly cookies for XSS protection
 
-### Email
+### Email Flows
+
 - Email verification on registration
 - Resend verification email
 - Forgot password & reset flow
 - Email change with re-verification
 
 ### Security
-- Two-Factor Authentication (TOTP)
-- 10 backup codes for 2FA recovery
+
+- Two-Factor Authentication (TOTP) with backup codes
 - Rate limiting (100/min global, 10/min auth)
 - bcrypt password hashing (12 rounds)
 - SQL injection prevention (parameterized queries)
 - CSRF-protected OAuth flows (state tokens)
 
-### Account Management
-- Update profile (name, avatar via Cloudinary)
+### User Management
+
+- Profile updates (name, avatar via Cloudinary)
 - Change password (local accounts only)
 - Soft account deletion (30-day restore window)
 - Account restoration via email token
 
 ### Multi-Tenancy
-- Register multiple apps as tenants
+
+- Each application registers as a tenant
 - Per-tenant API key authentication
-- Isolated users per tenant
+- Fully isolated user bases per tenant
 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js v24+
 - Docker & Docker Compose
 - PostgreSQL (via Docker or external)
@@ -80,8 +89,8 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/auth-service.git
-cd auth-service
+git clone https://github.com/juma-paul/authkit.git
+cd authkit
 
 # Install dependencies
 npm install
@@ -94,7 +103,8 @@ cp .env.example .env.development
 docker-compose up -d
 
 # Run database migrations
-npm run db:migrate
+# inside infrastructure/database
+psql "DATABASE_URL" -f schema.sql
 
 # Start development server
 npm run dev
@@ -103,13 +113,11 @@ npm run dev
 ### Verify it's running
 
 ```bash
-curl http://localhost:3001/health
+curl http://localhost:3002/health
 # Response: {"status":"ok","environment":"development"}
 ```
 
 ## Running the Project
-
-### Local Development
 
 ```bash
 npm run dev        # Start with hot reload
@@ -122,92 +130,37 @@ npm start          # Run production build
 ### Docker
 
 ```bash
-# Build image
-docker build -t auth-service .
-
-# Run container
-docker run -p 3001:3001 --env-file .env auth-service
+docker build -t authkit .
+docker run -p 3002:3002 --env-file .env authkit
 ```
-
-### Production Deployment (GCP Cloud Run)
-
-1. **Build and push to Artifact Registry:**
-```bash
-# Configure Docker for GCP
-gcloud auth configure-docker REGION-docker.pkg.dev
-
-# Build and tag
-docker build -t REGION-docker.pkg.dev/PROJECT_ID/REPO/auth-service:latest .
-
-# Push
-docker push REGION-docker.pkg.dev/PROJECT_ID/REPO/auth-service:latest
-```
-
-2. **Deploy to Cloud Run:**
-```bash
-gcloud run deploy auth-service \
-  --image REGION-docker.pkg.dev/PROJECT_ID/REPO/auth-service:latest \
-  --platform managed \
-  --region REGION \
-  --allow-unauthenticated
-```
-
-3. **Set environment variables** via Cloud Run console or CLI
-
-4. **Point custom domain** (optional) via Cloud Run domain mappings
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.development`:
+Copy `.env.example` to `.env.development` and configure:
 
-```bash
-# Server
-PORT=3001
-NODE_ENV=development
-APP_URL=https://your-frontend.com
-API_URL=https://your-api.com
+| Category     | Variables                                           |
+| ------------ | --------------------------------------------------- |
+| **Server**   | `PORT`, `NODE_ENV`, `APP_URL`, `API_URL`            |
+| **Database** | `DATABASE_URL`                                      |
+| **Auth**     | `JWT_SECRET`, `JWT_REFRESH_SECRET`, expiry settings |
+| **OAuth**    | Google & GitHub client IDs, secrets, callbacks      |
+| **Services** | Resend API key, Cloudinary credentials              |
+| **Admin**    | `ADMIN_SECRET`                                      |
 
-# Database
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE
-
-# JWT
-JWT_SECRET=your_random_secret_here_min_32_chars
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=your_refresh_secret_here_min_32_chars
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Email (Resend)
-RESEND_API_KEY=your_resend_api_key
-
-# OAuth - Google
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=https://api.yourdomain.com/api/v1/auth/google/callback
-
-# OAuth - GitHub
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=https://api.yourdomain.com/api/v1/auth/github/callback
-
-# Cloudinary (Image uploads)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Admin
-ADMIN_SECRET=your_super_secret_key_here
-```
+See [`.env.example`](./.env.example) for complete list with descriptions.
 
 ## API Documentation
 
 Full API documentation: [API_DOCS.md](./API_DOCS.md)
 
 ### Base URL
+
 ```
 https://your-api.com/api/v1
 ```
 
 ### Authentication
+
 - All endpoints require `X-API-Key` header with your tenant API key
 - Protected endpoints use `accessToken` cookie (set automatically on login)
 
@@ -219,24 +172,34 @@ npm run test:watch    # Watch mode
 npm run test:coverage # With coverage report
 ```
 
-Current coverage: **89%** | Tests: **98 passing**
+## Demo
 
-## Development Process
+**Live Demo:** [authkit-demo-six.vercel.app](https://authkit-demo-six.vercel.app)
+
+**Video Walkthrough:**
+
+[![AuthKit Demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+
+> _Click to watch the full demo on YouTube_
+
+**Reference Client:** [AuthKit Demo](https://github.com/juma-paul/authkit-demo) — Production-ready Next.js frontend
+
+## Development
 
 ### How I Built It
 
-1. **Architecture Design**: Started with clean separation - controllers for business logic, middleware for cross-cutting concerns, services for external integrations
-2. **Security First**: Implemented httpOnly cookies, JWT rotation, bcrypt hashing, and rate limiting from day one
-3. **Multi-Tenancy**: Designed database schema with tenant isolation using API keys and composite unique constraints
-4. **OAuth Integration**: Added Google and GitHub using Passport.js with CSRF-protected state tokens
-5. **Testing**: Built comprehensive test suite with Jest + Supertest, mocking external services
+1. **Architecture Design** — Clean separation: controllers for business logic, middleware for cross-cutting concerns, services for external integrations
+2. **Security First** — Implemented httpOnly cookies, JWT rotation, bcrypt hashing, and rate limiting from day one
+3. **Multi-Tenancy** — Designed database schema with tenant isolation using API keys and composite unique constraints
+4. **OAuth Integration** — Added Google and GitHub using Passport.js with CSRF-protected state tokens
+5. **Testing** — Built comprehensive test suite with Jest + Supertest, mocking external services
 
 ### What I Learned
 
-- **Token Refresh Race Conditions**: Frontend interceptors need request queuing during refresh to avoid multiple refresh calls
-- **401 vs 400 Semantics**: Using specific error codes (`TOKEN_EXPIRED` vs `UNAUTHORIZED`) enables smarter client-side handling
-- **Soft Delete UX**: 30-day restore windows require clear user communication and email-based recovery flows
-- **OAuth State Tokens**: Essential for preventing CSRF attacks in OAuth flows
+- **Token Refresh Race Conditions** — Frontend interceptors need request queuing during refresh to avoid multiple refresh calls
+- **401 vs 400 Semantics** — Using specific error codes (`TOKEN_EXPIRED` vs `UNAUTHORIZED`) enables smarter client-side handling
+- **Soft Delete UX** — 30-day restore windows require clear user communication and email-based recovery flows
+- **OAuth State Tokens** — Essential for preventing CSRF attacks in OAuth flows
 
 ### Future Improvements
 
@@ -247,15 +210,6 @@ Current coverage: **89%** | Tests: **98 passing**
 - [ ] Request tracing with correlation IDs
 - [ ] Prometheus metrics endpoint
 - [ ] GraphQL API alongside REST
-
-## Demo
-
-For backend services, demo via:
-1. **Postman Collection**: Import and test all endpoints
-2. **Screen Recording**: API testing walkthrough
-3. **Live API**: `https://your-cloud-run-url.run.app/health`
-
-<!-- TODO: Add screen recording link -->
 
 ## Project Structure
 
@@ -282,14 +236,28 @@ src/
 5. Open a Pull Request
 
 ### Code Style
+
 - TypeScript strict mode
 - ESLint + Prettier
 - Conventional commits
 
+## Related Projects
+
+- **[AuthKit Demo](https://github.com/juma-paul/authkit-demo)** — Reference frontend client built with Next.js, demonstrating full integration with AuthKit.
+
 ## License
 
-[MIT](./LICENSE)
+This project is open source and available under the [MIT License](./LICENSE).
 
 ---
 
-Built with TypeScript, Express, and PostgreSQL
+<div align="center">
+
+**Built with TypeScript, Express, and PostgreSQL.**
+
+If you found this helpful, consider giving it a star
+<img src="https://github.githubassets.com/images/icons/emoji/unicode/2b50.png" 
+     height="18" 
+     style="vertical-align: text-bottom;" />
+
+</div>
