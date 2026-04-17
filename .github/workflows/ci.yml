@@ -44,6 +44,7 @@ jobs:
       CLOUDINARY_CLOUD_NAME: test_cloud
       CLOUDINARY_API_KEY: test_key
       CLOUDINARY_API_SECRET: test_secret
+      RATE_LIMIT_ENABLED: false
 
     steps:
       - uses: actions/checkout@v4
