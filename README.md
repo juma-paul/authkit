@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/juma-paul/authkit/actions/workflows/ci.yml/badge.svg?branch=main)
 ![Coverage](https://codecov.io/gh/juma-paul/authkit/branch/main/graph/badge.svg)
-![Version](https://img.shields.io/badge/version-v1.0.0-blue)
+![Version](https://img.shields.io/github/v/tag/juma-paul/authkit?label=version)
 ![Node](https://img.shields.io/badge/node-v24%2B-green)
 ![TypeScript](https://img.shields.io/badge/typescript-5.9-blue)
 ![License](https://img.shields.io/github/license/juma-paul/authkit)
