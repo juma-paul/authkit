@@ -49,7 +49,7 @@ jobs:
         run: npm ci
 
       - name: Run migrations
-        run: psql $DATABASE_URL -f schema.sql
+        run: psql $DATABASE_URL -f infrastructure/database/schema.sql
 
       - name: Run tests
         run: npm test
