@@ -51,7 +51,6 @@ if (config.rateLimitEnabled) {
 app.get("/health", (req, res) => {
   sendSuccess(res, {
     status: "healthy",
-    service: "user-service",
     environment: config.nodeEnv,
   });
 });

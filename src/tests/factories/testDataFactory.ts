@@ -1,5 +1,5 @@
 /**
- * Test Data Factory - FAANG-style test data generation
+ * Test Data Factory - Test data generation
  *
  * Provides factory functions and builders for creating test data
  * with sensible defaults and easy customization.
