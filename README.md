@@ -3,7 +3,7 @@
 > Deploy once, authenticate every project. Multi-tenant identity API with OAuth, 2FA, and complete account management.
 
 ![CI](https://github.com/juma-paul/authkit/actions/workflows/ci.yml/badge.svg?branch=main)
-![Coverage](https://codecov.io/gh/juma-paul/authkit/branch/main/graph/badge.svg)
+![Tests](https://github.com/juma-paul/authkit/actions/workflows/ci.yml/badge.svg?branch=main)
 ![Version](https://img.shields.io/badge/version-v1.0.0-blue)
 ![Node](https://img.shields.io/badge/node-v24%2B-green)
 ![TypeScript](https://img.shields.io/badge/typescript-5.9-blue)
