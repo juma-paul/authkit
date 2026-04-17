@@ -8,6 +8,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  TokenExpiredError,
   UnauthorizedError,
   ValidationError,
 } from "../errors/AppError";
@@ -232,7 +233,11 @@ export const refreshTokens = async (
     let decoded: any;
     try {
       decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
-    } catch (_error) {
+    } catch (error) {
+      // Distinguish between expired and invalid tokens for better error messages
+      if (error instanceof jwt.TokenExpiredError) {
+        return next(new TokenExpiredError("Refresh token expired"));
+      }
       return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN));
     }
 
