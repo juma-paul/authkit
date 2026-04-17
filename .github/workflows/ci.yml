@@ -62,7 +62,12 @@ jobs:
         run: psql $DATABASE_URL -f infrastructure/database/schema.sql
 
       - name: Run tests
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     name: Deploy to Cloud Run
