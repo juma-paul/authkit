@@ -525,7 +525,6 @@ export const resetPassword = async (
 };
 
 // Get oauth url
-// Get oauth url
 export const getOAuthUrl = async (
   req: Request,
   res: Response,
@@ -537,7 +536,7 @@ export const getOAuthUrl = async (
 
     const state = generateOAuthState(req.tenantId);
 
-    // IMPORTANT: OAuth must return to FRONTEND domain
+    // OAuth must return to FRONTEND domain
     const baseUrl = `${config.appUrl}/api/auth`;
 
     const urls: Record<string, string> = {
