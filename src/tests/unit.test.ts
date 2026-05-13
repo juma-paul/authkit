@@ -373,7 +373,18 @@ jest.mock("../config/env", () => ({
     resendApiKey: "re_test",
     resendFromEmail: "noreply@example.com",
     appUrl: "https://global.example.com",
+    adminSecret: "test-admin-secret",
   },
+}));
+
+jest.mock("../config/database", () => ({
+  pool: { query: jest.fn() },
+}));
+
+jest.mock("../utils/tokens", () => ({
+  generateSecureToken: jest.fn().mockReturnValue("mockedtoken"),
+  generateTokens: jest.fn(),
+  generateOAuthState: jest.fn(),
 }));
 
 describe("Email Service — per-tenant appUrl", () => {
@@ -413,5 +424,107 @@ describe("Email Service — per-tenant appUrl", () => {
     await sendAccountDeletionEmail("u@test.com", "tok", "https://tenant.app");
     const html: string = mockSend.mock.calls[0][0].html;
     expect(html).toContain("https://tenant.app/restore-account?token=tok");
+  });
+});
+
+// ============================================================================
+// adminAuth middleware
+// ============================================================================
+
+describe("adminAuth middleware", () => {
+  const { adminAuth } = require("../middleware/adminAuth.middleware");
+
+  it("calls next() with no args when secret matches", () => {
+    const req = { header: jest.fn().mockReturnValue("test-admin-secret") };
+    const next = jest.fn();
+    adminAuth(req, {}, next);
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it("calls next(error) when secret is wrong", () => {
+    const req = { header: jest.fn().mockReturnValue("wrong") };
+    const next = jest.fn();
+    adminAuth(req, {}, next);
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+  });
+});
+
+// ============================================================================
+// tenantMiddleware — app_url propagation
+// ============================================================================
+
+describe("tenantMiddleware — app_url propagation", () => {
+  const { pool } = require("../config/database");
+  const { tenantMiddleware } = require("../middleware/tenant.middleware");
+
+  beforeEach(() => pool.query.mockClear());
+
+  it("sets tenantAppUrl when tenant has app_url", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: "t1", app_url: "https://tenant.vercel.app", is_active: true }],
+    });
+    const req: any = { header: jest.fn().mockReturnValue("sk_key"), query: {} };
+    const next = jest.fn();
+    await tenantMiddleware(req, {}, next);
+    expect(req.tenantAppUrl).toBe("https://tenant.vercel.app");
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it("leaves tenantAppUrl undefined when app_url is null", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: "t2", app_url: null, is_active: true }],
+    });
+    const req: any = { header: jest.fn().mockReturnValue("sk_key"), query: {} };
+    const next = jest.fn();
+    await tenantMiddleware(req, {}, next);
+    expect(req.tenantAppUrl).toBeUndefined();
+    expect(next).toHaveBeenCalledWith();
+  });
+});
+
+// ============================================================================
+// registerTenant controller — app_url persistence
+// ============================================================================
+
+describe("registerTenant controller", () => {
+  const { pool } = require("../config/database");
+  const { registerTenant } = require("../controllers/tenant.controller");
+
+  const mockRes = () => ({
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+  });
+
+  beforeEach(() => pool.query.mockClear());
+
+  it("inserts app_url when appUrl is provided", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{ id: "1", name: "A", api_key: "sk_mockedtoken", owner_email: "a@a.com", app_url: "https://a.vercel.app" }],
+      });
+    const req: any = { body: { name: "A", ownerEmail: "a@a.com", appUrl: "https://a.vercel.app" } };
+    const next = jest.fn();
+    await registerTenant(req, mockRes(), next);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO tenants"),
+      ["A", expect.any(String), "a@a.com", "https://a.vercel.app"],
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("inserts null app_url when appUrl is omitted", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{ id: "2", name: "B", api_key: "sk_mockedtoken", owner_email: "b@b.com", app_url: null }],
+      });
+    const req: any = { body: { name: "B", ownerEmail: "b@b.com" } };
+    const next = jest.fn();
+    await registerTenant(req, mockRes(), next);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO tenants"),
+      ["B", expect.any(String), "b@b.com", null],
+    );
   });
 });
