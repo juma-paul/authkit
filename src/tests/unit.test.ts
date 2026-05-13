@@ -501,14 +501,14 @@ describe("registerTenant controller", () => {
     pool.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
-        rows: [{ id: "1", name: "A", api_key: "sk_mockedtoken", owner_email: "a@a.com", app_url: "https://a.vercel.app" }],
+        rows: [{ id: "1", name: "AppOne", api_key: "sk_mockedtoken", owner_email: "owner@appone.com", app_url: "https://appone.vercel.app" }],
       });
-    const req: any = { body: { name: "A", ownerEmail: "a@a.com", appUrl: "https://a.vercel.app" } };
+    const req: any = { body: { name: "AppOne", ownerEmail: "owner@appone.com", appUrl: "https://appone.vercel.app" } };
     const next = jest.fn();
     await registerTenant(req, mockRes(), next);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO tenants"),
-      ["A", expect.any(String), "a@a.com", "https://a.vercel.app"],
+      ["AppOne", expect.any(String), "owner@appone.com", "https://appone.vercel.app"],
     );
     expect(next).not.toHaveBeenCalled();
   });
@@ -517,14 +517,14 @@ describe("registerTenant controller", () => {
     pool.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
-        rows: [{ id: "2", name: "B", api_key: "sk_mockedtoken", owner_email: "b@b.com", app_url: null }],
+        rows: [{ id: "2", name: "AppTwo", api_key: "sk_mockedtoken", owner_email: "owner@apptwo.com", app_url: null }],
       });
-    const req: any = { body: { name: "B", ownerEmail: "b@b.com" } };
+    const req: any = { body: { name: "AppTwo", ownerEmail: "owner@apptwo.com" } };
     const next = jest.fn();
     await registerTenant(req, mockRes(), next);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO tenants"),
-      ["B", expect.any(String), "b@b.com", null],
+      ["AppTwo", expect.any(String), "owner@apptwo.com", null],
     );
   });
 });
