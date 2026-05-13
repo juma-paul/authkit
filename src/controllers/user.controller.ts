@@ -250,7 +250,7 @@ export const changeEmail = async (
     );
 
     // Send verification email
-    await sendEmailChangeVerificationEmail(newEmail, token);
+    await sendEmailChangeVerificationEmail(newEmail, token, req.tenantAppUrl);
 
     sendSuccess(res, {
       message: "Please verify your new email address. Check your inbox.",
@@ -360,7 +360,7 @@ export const deleteAccount = async (
       [userId],
     );
 
-    await sendAccountDeletionEmail(user.email, restoreToken);
+    await sendAccountDeletionEmail(user.email, restoreToken, req.tenantAppUrl);
 
     sendSuccess(res, {
       message: "Account deleted. You have 30 days to restore it.",

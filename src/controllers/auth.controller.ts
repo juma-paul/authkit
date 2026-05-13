@@ -84,7 +84,7 @@ export const register = async (
       [user.id, verificationToken],
     );
 
-    await sendVerificationEmail(user.email, verificationToken);
+    await sendVerificationEmail(user.email, verificationToken, req.tenantAppUrl);
 
     // Return response
     const {
@@ -313,7 +313,7 @@ export const sendVerification = async (
     );
 
     // Send email
-    await sendVerificationEmail(result.rows[0].email, token);
+    await sendVerificationEmail(result.rows[0].email, token, req.tenantAppUrl);
 
     sendSuccess(res, { message: ERROR_MESSAGES.VERIFICATION_SENT });
   } catch (error) {
@@ -396,7 +396,7 @@ export const resendVerification = async (
       [user.id, token],
     );
 
-    await sendVerificationEmail(email, token);
+    await sendVerificationEmail(email, token, req.tenantAppUrl);
     sendSuccess(res, { message: ERROR_MESSAGES.VERIFICATION_SENT });
   } catch (error) {
     next(error);
@@ -441,7 +441,7 @@ export const forgotPassword = async (
     );
 
     // Send email
-    await sendPasswordResetEmail(email, token);
+    await sendPasswordResetEmail(email, token, req.tenantAppUrl);
 
     sendSuccess(res, {
       message: "If that email exists, a reset link has been sent",

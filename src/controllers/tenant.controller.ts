@@ -11,7 +11,7 @@ export const registerTenant = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, ownerEmail } = tenantSchema.parse(req.body);
+    const { name, ownerEmail, appUrl } = tenantSchema.parse(req.body);
 
     // Check name not already taken
     const existing = await pool.query(
@@ -26,9 +26,9 @@ export const registerTenant = async (
 
     // Save to DB
     const result = await pool.query(
-      `INSERT INTO tenants (name, api_key, owner_email)
-       VALUES ($1, $2, $3) RETURNING id, name, api_key, owner_email`,
-      [name, apiKey, ownerEmail],
+      `INSERT INTO tenants (name, api_key, owner_email, app_url)
+       VALUES ($1, $2, $3, $4) RETURNING id, name, api_key, owner_email, app_url`,
+      [name, apiKey, ownerEmail, appUrl ?? null],
     );
 
     sendSuccess(res, { tenant: result.rows[0] }, 201);

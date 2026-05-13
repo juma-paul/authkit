@@ -30,7 +30,8 @@ export const tenantMiddleware = async (
     return next(new UnauthorizedError("Tenant is suspended"));
   }
 
-  // Attach tenantId to request
+  // Attach tenant info to request
   req.tenantId = tenant.id;
+  req.tenantAppUrl = tenant.app_url ?? undefined;
   next();
 };

@@ -9,6 +9,7 @@ declare global {
         auth_provider: string;
       };
       tenantId?: string;
+      tenantAppUrl?: string;
     }
   }
 }

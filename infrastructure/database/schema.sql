@@ -16,6 +16,7 @@ CREATE TABLE tenants (
     name VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) UNIQUE NOT NULL,
     owner_email VARCHAR(255) NOT NULL,
+    app_url TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     plan VARCHAR(50) DEFAULT 'free',
     created_at TIMESTAMPTZ DEFAULT NOW(),

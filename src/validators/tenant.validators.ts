@@ -4,4 +4,5 @@ import { z } from "zod";
 export const tenantSchema = z.object({
   name: z.string().min(2).max(100),
   ownerEmail: z.email(),
+  appUrl: z.url().optional(),
 });

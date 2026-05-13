@@ -62,8 +62,9 @@ const linkNote = (url: string) => `
 export const sendVerificationEmail = async (
   email: string,
   token: string,
+  appUrl?: string,
 ): Promise<void> => {
-  const verificationUrl = `${config.appUrl}/verify-email?token=${token}`;
+  const verificationUrl = `${appUrl ?? config.appUrl}/verify-email?token=${token}`;
 
   await resend.emails.send({
     from: FROM_EMAIL,
@@ -83,8 +84,9 @@ export const sendVerificationEmail = async (
 export const sendPasswordResetEmail = async (
   email: string,
   token: string,
+  appUrl?: string,
 ): Promise<void> => {
-  const resetUrl = `${config.appUrl}/reset-password?token=${token}`;
+  const resetUrl = `${appUrl ?? config.appUrl}/reset-password?token=${token}`;
 
   await resend.emails.send({
     from: FROM_EMAIL,
@@ -121,8 +123,9 @@ export const sendEmailChangeNotification = async (
 export const sendEmailChangeVerificationEmail = async (
   newEmail: string,
   token: string,
+  appUrl?: string,
 ): Promise<void> => {
-  const verificationUrl = `${config.appUrl}/verify-email-change?token=${token}`;
+  const verificationUrl = `${appUrl ?? config.appUrl}/verify-email-change?token=${token}`;
 
   await resend.emails.send({
     from: FROM_EMAIL,
@@ -141,8 +144,9 @@ export const sendEmailChangeVerificationEmail = async (
 export const sendAccountDeletionEmail = async (
   email: string,
   token: string,
+  appUrl?: string,
 ): Promise<void> => {
-  const restoreUrl = `${config.appUrl}/restore-account?token=${token}`;
+  const restoreUrl = `${appUrl ?? config.appUrl}/restore-account?token=${token}`;
 
   await resend.emails.send({
     from: FROM_EMAIL,
