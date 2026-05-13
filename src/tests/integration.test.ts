@@ -1137,7 +1137,7 @@ const adminApi = (method: "get" | "post", path: string) => {
 
 describe("M. Tenant Registration", () => {
   it("should register a tenant without appUrl", async () => {
-    const res = await adminApi("post", "/admin/tenants").send({
+    const res = await adminApi("post", "/tenants").send({
       name: "NewApp",
       ownerEmail: "owner@newapp.com",
     });
@@ -1153,7 +1153,7 @@ describe("M. Tenant Registration", () => {
   });
 
   it("should register a tenant with appUrl and persist it", async () => {
-    const res = await adminApi("post", "/admin/tenants").send({
+    const res = await adminApi("post", "/tenants").send({
       name: "TallyTest",
       ownerEmail: "owner@tally.com",
       appUrl: "https://tally.vercel.app",
@@ -1166,12 +1166,12 @@ describe("M. Tenant Registration", () => {
   });
 
   it("should reject duplicate tenant name", async () => {
-    await adminApi("post", "/admin/tenants").send({
+    await adminApi("post", "/tenants").send({
       name: "DupApp",
       ownerEmail: "a@dup.com",
     });
 
-    const res = await adminApi("post", "/admin/tenants").send({
+    const res = await adminApi("post", "/tenants").send({
       name: "DupApp",
       ownerEmail: "b@dup.com",
     });
@@ -1182,7 +1182,7 @@ describe("M. Tenant Registration", () => {
   });
 
   it("should attach tenantAppUrl to request when tenant has app_url set", async () => {
-    const regRes = await adminApi("post", "/admin/tenants").send({
+    const regRes = await adminApi("post", "/tenants").send({
       name: "AppUrlTenant",
       ownerEmail: "owner@appurl.com",
       appUrl: "https://appurl-tenant.vercel.app",
