@@ -355,3 +355,63 @@ describe("Unit Tests", () => {
     });
   });
 });
+
+// ============================================================================
+// Email Service — per-tenant appUrl tests
+// ============================================================================
+
+const mockSend = jest.fn().mockResolvedValue({ id: "mock-id" });
+
+jest.mock("resend", () => ({
+  Resend: jest.fn().mockImplementation(() => ({
+    emails: { send: mockSend },
+  })),
+}));
+
+jest.mock("../config/env", () => ({
+  config: {
+    resendApiKey: "re_test",
+    resendFromEmail: "noreply@example.com",
+    appUrl: "https://global.example.com",
+  },
+}));
+
+describe("Email Service — per-tenant appUrl", () => {
+  beforeEach(() => mockSend.mockClear());
+
+  it("sendVerificationEmail uses tenant appUrl when provided", async () => {
+    const { sendVerificationEmail } = await import("../services/email.service");
+    await sendVerificationEmail("u@test.com", "tok", "https://tenant.app");
+    const html: string = mockSend.mock.calls[0][0].html;
+    expect(html).toContain("https://tenant.app/verify-email?token=tok");
+    expect(html).not.toContain("global.example.com");
+  });
+
+  it("sendVerificationEmail falls back to config.appUrl when omitted", async () => {
+    const { sendVerificationEmail } = await import("../services/email.service");
+    await sendVerificationEmail("u@test.com", "tok2");
+    const html: string = mockSend.mock.calls[0][0].html;
+    expect(html).toContain("https://global.example.com/verify-email?token=tok2");
+  });
+
+  it("sendPasswordResetEmail uses tenant appUrl when provided", async () => {
+    const { sendPasswordResetEmail } = await import("../services/email.service");
+    await sendPasswordResetEmail("u@test.com", "tok", "https://tenant.app");
+    const html: string = mockSend.mock.calls[0][0].html;
+    expect(html).toContain("https://tenant.app/reset-password?token=tok");
+  });
+
+  it("sendEmailChangeVerificationEmail uses tenant appUrl when provided", async () => {
+    const { sendEmailChangeVerificationEmail } = await import("../services/email.service");
+    await sendEmailChangeVerificationEmail("u@test.com", "tok", "https://tenant.app");
+    const html: string = mockSend.mock.calls[0][0].html;
+    expect(html).toContain("https://tenant.app/verify-email-change?token=tok");
+  });
+
+  it("sendAccountDeletionEmail uses tenant appUrl when provided", async () => {
+    const { sendAccountDeletionEmail } = await import("../services/email.service");
+    await sendAccountDeletionEmail("u@test.com", "tok", "https://tenant.app");
+    const html: string = mockSend.mock.calls[0][0].html;
+    expect(html).toContain("https://tenant.app/restore-account?token=tok");
+  });
+});
